@@ -1,0 +1,23 @@
+builddir	= @builddir@
+srcdir	=   @srcdir@
+VPATH	=   @srcdir@
+MKRULES_BUILDDIR	=	@MKRULES_BUILDDIR@
+
+TARGET_EXE					=		sqc_rpc_client
+INSTALL_BIN_EXE_TARGETS		=		$(TARGET_EXE)
+INSTALL_BIN_EXE_DIR			=		$(DEST_BIN_EXEDIR)
+
+TARGETS		= 	$(TARGET_EXE)
+
+SRCS		=	adm_del_jobs.c adm_add_user.c adm_set_user_status.c cancel.c \
+				common.c delete.c list.c main.c status.c submit.c
+
+include $(MKRULES_BUILDDIR)/vars.mk
+
+CPPFLAGS	+=	-I$(APP_INC_BUILDDIR) -I$(APP_INC_SRCDIR)
+DEP_LIBS	+=	$(DEP_SQC_UTIL_LIB)
+DEP_LIBS	+=	$(DEP_APP_RPC_LIB)
+DEP_LIBS	+=	$(DEP_APP_SQC_RPC_COMMON_LIB)
+DEP_LIBS	+=	$(PROTOBUF_C_LIBS)
+
+include $(MKRULES_BUILDDIR)/rules.mk

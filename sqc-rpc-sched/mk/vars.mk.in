@@ -1,0 +1,311 @@
+TARGET_ARCH	= @TARGET_ARCH@
+
+SHELL          = @SHELL@
+top_srcdir     = @abs_top_srcdir@
+top_builddir   = @abs_top_builddir@
+MKRULES_SRCDIR = $(top_srcdir)/mk
+MKRULES_BUILDDIR = $(top_builddir)/mk
+
+prefix		= @prefix@
+sysconfdir	= @sysconfdir@
+rundir		= @runstatedir@
+vardir		= @localstatedir@
+
+ifneq ($(DESTDIR),)
+prefix		:= $(DESTDIR)/$(prefix)
+sysconfdir	:= $(DESTDIR)/$(sysconfdir)
+endif
+
+PREFIX		=	$(prefix)
+SYSCONFDIR	=	$(sysconfdir)
+RUNDIR		=	$(rundir)
+VARDIR		=	$(vardir)
+
+DEST_BIN_EXEDIR		= $(prefix)/bin
+DEST_SBIN_EXEDIR	= $(prefix)/sbin
+DEST_LIBDIR		= $(prefix)/lib
+DEST_HDRDIR_TOP		= $(prefix)/include
+
+LIBTOOL_DEPS	= @LIBTOOL_DEPS@
+
+MAKE		= LC_ALL=C @MAKE@
+LN_S		= @LN_S@
+READLINK		= @READLINK@
+BASENAME		= @BASENAME@
+RM		= @RM@
+MKDIR		= @MKDIR@
+LIBTOOL		= LC_ALL=C @LIBTOOL@ --quiet
+
+CC		= @CC@
+CXX		= @CXX@
+LINK_CC		= $(CC)
+LINK_CXX	= $(CXX)
+YACC		= @YACC@
+LEX		= @LEX@
+AWK		= @AWK@
+
+PKGCONF	= @PKGCONF@
+
+INSTALL		= @INSTALL@
+INSTALL_DATA	= @INSTALL_DATA@
+INSTALL_SCRIPT	= @INSTALL_SCRIPT@
+INSTALL_PROGRAM	= @INSTALL_PROGRAM@
+
+FRAMEWORK_INC_SRCDIR	= $(top_srcdir)/framework/include
+FRAMEWORK_INC_BUILDDIR	= $(top_builddir)/framework/include
+FRAMEWORK_LIBDIR		= $(top_builddir)/framework/lib
+
+SQC_UTIL_LIB		= libsqc_util.la
+DEP_SQC_UTIL_LIB	= $(FRAMEWORK_LIBDIR)/$(SQC_UTIL_LIB)
+RUNPATH_SQC_UTIL_LIB	=	$(FRAMEWORK_LIBDIR)/.libs
+
+OSDEF	=	@OSDEF@
+CPUDEF	=	@CPUDEF@
+
+SITECONF_MK	?=	$(shell ls $(MKRULES_SRCDIR)/siteconf.mk 2>/dev/null)
+ifdef SITECONF_MK
+__SITECONF__=.pre.
+include $(SITECONF_MK)
+endif
+
+TOOLCHAIN_TARGET	= @TOOLCHAIN_TARGET@
+
+DPDK_DIR		= @DPDK_DIR@
+ifneq ($(DPDK_DIR),)
+DPDK_LIBS	= $(shell PKG_CONFIG_PATH=$(DPDK_DIR)/pkgconfig $(PKGCONF) --libs libdpdk)
+DPDK_INCLUDE	= $(shell PKG_CONFIG_PATH=$(DPDK_DIR)/pkgconfig $(PKGCONF) --cflags libdpdk)
+endif
+
+PCAP_LIBS		= @PCAP_LIBS@
+
+
+APP_SRCDIR			= $(top_srcdir)/app
+APP_BUILDDIR			= $(top_builddir)/app
+
+APP_SYSCONFDIR			= $(sysconfdir)/sqc-scheduler
+APP_VARDIR			= $(vardir)/sqc-scheduler
+
+APP_INC_SRCDIR			= $(APP_SRCDIR)/include
+APP_INC_BUILDDIR		= $(APP_BUILDDIR)/include
+
+APP_MODTMPL_SRCDIR		= $(APP_SRCDIR)/module_tmpl
+APP_MODTMPL_BUILDDIR		= $(APP_BUILDDIR)/module_tmpl
+APP_MODTMPL_LIB			= libsqc_modtmpl.la
+DEP_APP_MODTMPL_LIB		= $(APP_MODTMPL_BUILDDIR)/$(APP_MODTMPL_LIB)
+RUNPATH_MODTMPL_LIB		= $(APP_MODTMPL_BUILDDIR)/.libs
+
+APP_DBMGR_SRCDIR		= $(APP_SRCDIR)/dbmgr
+APP_DBMGR_BUILDDIR		= $(APP_BUILDDIR)/dbmgr
+APP_DBMGR_LIB			= libsqc_dbmgr.la
+DEP_APP_DBMGR_LIB		= $(APP_DBMGR_BUILDDIR)/$(APP_DBMGR_LIB)
+RUNPATH_DBMGR_LIB		= $(APP_DBMGR_BUILDDIR)/.libs
+
+APP_REQ_INVOKER_SRCDIR		= $(APP_SRCDIR)/req_invoker
+APP_REQ_INVOKER_BUILDDIR	= $(APP_BUILDDIR)/req_invoker
+APP_REQ_INVOKER_LIB		= libsqc_reqinvoker.la
+DEP_APP_REQ_INVOKER_LIB		= $(APP_REQ_INVOKER_BUILDDIR)/$(APP_REQ_INVOKER_LIB)
+RUNPATH_REQ_INVOKER_LIB		= $(APP_REQ_INVOKER_BUILDDIR)/.libs
+
+APP_REQ_SCHED_SRCDIR		= $(APP_SRCDIR)/req_sched
+APP_REQ_SCHED_BUILDDIR		= $(APP_BUILDDIR)/req_sched
+APP_REQ_SCHED_LIB		= libsqc_reqsched.la
+DEP_APP_REQ_SCHED_LIB		= $(APP_REQ_SCHED_BUILDDIR)/$(APP_REQ_SCHED_LIB)
+RUNPATH_REQ_SCHED_LIB		= $(APP_REQ_SCHED_BUILDDIR)/.libs
+
+APP_SQC_RPC_COMMON_SRCDIR	= $(APP_SRCDIR)/sqc_rpc_common
+APP_SQC_RPC_COMMON_BUILDDIR	= $(APP_BUILDDIR)/sqc_rpc_common
+APP_SQC_RPC_COMMON_LIB		= libsqc_rpccommon.la
+DEP_APP_SQC_RPC_COMMON_LIB	= $(APP_SQC_RPC_COMMON_BUILDDIR)/$(APP_SQC_RPC_COMMON_LIB)
+RUNPATH_SQC_RPC_COMMON_LIB	= $(APP_SQC_RPC_COMMON_BUILDDIR)/.libs
+
+APP_GRPC_BROKER_SRCDIR		= $(APP_SRCDIR)/grpc_broker
+APP_GRPC_BROKER_BUILDDIR	= $(APP_BUILDDIR)/grpc_broker
+APP_GRPC_BROKER_LIB		= libsqc_grpcbroker.la
+DEP_APP_GRPC_BROKER_LIB		= $(APP_GRPC_BROKER_BUILDDIR)/$(APP_GRPC_BROKER_LIB)
+RUNPATH_GRPC_BROKER_LIB		= $(APP_GRPC_BROKER_BUILDDIR)/.libs
+
+APP_RPC_SRCDIR			= $(APP_SRCDIR)/rpc
+APP_RPC_BUILDDIR		= $(APP_BUILDDIR)/rpc
+APP_RPC_LIB			= libsqc_rpc.la
+DEP_APP_RPC_LIB			= $(APP_RPC_BUILDDIR)/$(APP_RPC_LIB)
+RUNPATH_RPC_LIB			= $(APP_RPC_BUILDDIR)/.libs
+
+APP_SRVSESSION_SRCDIR	= $(APP_SRCDIR)/srv_session
+APP_SRVSESSION_BUILDDIR	= $(APP_BUILDDIR)/srv_session
+APP_SRVSESSION_LIB		= libsqc_srvsession.la
+DEP_APP_SRVSESSION_LIB	= $(APP_SRVSESSION_BUILDDIR)/$(APP_SRVSESSION_LIB)
+RUNPATH_SRVSESSION_LIB	= $(APP_SRVSESSION_BUILDDIR)/.libs
+
+# Job Broker
+HAVE_JOBBROKER		= @HAVE_JOBBROKER@
+JOBBROKER_DIR		= @JOBBROKER_DIR@
+ifdef JOBBROKER_DIR
+JOBBROKER_INCDIR	= $(JOBBROKER_DIR)/include
+JOBBROKER_LIBDIR	= $(JOBBROKER_DIR)/lib
+JOBBROKER_LIBS		= $(JOBBROKER_LIBDIR)/libjob_broker.so
+endif
+
+# REX APIS
+HAVE_REXAPIS            = @HAVE_REXAPIS@
+REXAPIS_DIR             = @REXAPIS_DIR@
+ifdef REXAPIS_DIR
+REXAPIS_INCDIR          = $(REXAPIS_DIR)/include
+REXAPIS_LIBDIR          = $(REXAPIS_DIR)/lib
+REXAPIS_LIBS            = $(REXAPIS_LIBDIR)/librexapis.so
+endif
+
+HAVE_PROTOC		= @HAVE_PROTOC@
+HAVE_PROTOC_C		= @HAVE_PROTOC_C@
+PROTOBUF_C_CFLAGS	= @PROTOBUF_C_CFLAGS@
+PROTOBUF_C_LIBS	= @PROTOBUF_C_LIBS@
+PROTOC_C		= @PROTOC_C@
+
+# Munge
+HAVE_MUNGE		= @HAVE_MUNGE@
+MUNGE_CFLAGS	= @MUNGE_CFLAGS@
+MUNGE_LIBS	= @MUNGE_LIBS@
+
+# jwt-cpp
+JWT_CPP_CPPFLAGS	= @JWT_CPP_CPPFLAGS@
+JWT_CPP_LIBS	= @JWT_CPP_LIBS@
+
+SUBMODULES	=
+
+IS_DEVELOPER	= @IS_DEVELOPER@
+
+ifdef TOOLCHAIN_TARGET
+CPPFLAGS	+= -I/usr/include/x86_64-linux-gnu
+endif
+CPPFLAGS	+= @OS_CPPFLAGS@
+CPPFLAGS	+= -I.
+CPPFLAGS	+= -I$(srcdir)
+CPPFLAGS	+= -I$(FRAMEWORK_INC_BUILDDIR)
+CPPFLAGS	+= -I$(FRAMEWORK_INC_SRCDIR)
+CPPFLAGS	+= $(PROTOBUF_C_CFLAGS)
+CPPFLAGS	+= $(MUNGE_CFLAGS)
+CPPFLAGS	+= $(JWT_CPP_CPPFLAGS)
+CPPFLAGS	+= $(LOCAL_CPPFLAGS)
+
+WARN_BASE_CFLAGS	+= -W -Wall -Wextra \
+	-Wshadow \
+	-Wcast-align \
+	-Wwrite-strings \
+	-Wconversion \
+	-Waddress \
+	-Wmissing-format-attribute \
+	-Wno-long-long \
+	-Wno-variadic-macros
+#	-Wlogical-op
+
+WARN_CFLAGS	+= 	-std=gnu99 \
+	$(WARN_BASE_CFLAGS) \
+	-Wstrict-prototypes \
+	-Wold-style-definition \
+	-Wmissing-declarations \
+	-Wmissing-prototypes \
+	-Wnested-externs \
+	-Wdeclaration-after-statement
+
+WARN_CXXFLAGS	+=	-std=gnu++11 \
+	$(WARN_BASE_CFLAGS) \
+	-Wnon-virtual-dtor \
+	-Wstrict-null-sentinel \
+	-Woverloaded-virtual
+
+DEBUG_CFLAGS	?= -g3 -fno-omit-frame-pointer
+DEBUG_CXXFLAGS	?= -g3 -fno-omit-frame-pointer
+
+OPT_CFLAGS	?= -O0
+OPT_CXXFLAGS	?= -O0
+
+CODEGEN_CFLAGS		+= -fkeep-inline-functions
+CODEGEN_CXXFLAGS	+= -fkeep-inline-functions
+
+
+ifdef SANITIZE
+DEVELOPER_CFLAGS	+= -fsanitize=address
+DEVELOPER_CXXFLAGS	+= -fsanitize=address
+CPPFLAGS	+=	-D__UNDER_SANITIZER__
+endif # SANITIZE
+
+COMMON_CFLAGS	= $(WARN_CFLAGS) $(DEBUG_CFLAGS) $(OPT_CFLAGS) \
+	$(CODEGEN_CFLAGS) $(LOCAL_CFLAGS) $(DEVELOPER_CFLAGS)
+
+COMMON_CXXFLAGS	= $(WARN_CXXFLAGS) $(DEBUG_CXXFLAGS) \
+	$(OPT_CXXFLAGS) $(CODEGEN_CXXFLAGS) $(LOCAL_CXXFLAGS) $(DEVELOPER_CXXFLAGS)
+
+CFLAGS		+= @OS_CFLAGS@ @CFLAGS@ $(COMMON_CFLAGS)
+CXXFLAGS	+= @OS_CFLAGS@ @CXXFLAGS@ $(COMMON_CXXFLAGS)
+
+LDFLAGS		+= -Wl,--as-needed \
+		   @OS_LDFLAGS@ @OS_LIBS@ @LDFLAGS@
+
+OBJS		?= $(filter-out $(SRCS),$(SRCS:.c=.lo)) \
+			$(filter-out $(SRCS),$(SRCS:.cc=.lo)) \
+			$(filter-out $(SRCS),$(SRCS:.cpp=.lo))
+
+ifdef TARGET_LIB_CXX
+TARGET_LIB = $(TARGET_LIB_CXX)
+endif
+
+ifdef TARGET_EXE_CXX
+TARGET_EXE = $(TARGET_EXE_CXX)
+endif
+
+ifdef TARGET_LIB
+SHLIB_VERSION	?= 0:0:0
+LTLINK_VERSION	= -version-info $(SHLIB_VERSION)
+endif
+LTLINK_RPATH	= -rpath $(DEST_LIBDIR) -R $(JOBBROKER_LIBDIR) -R $(REXAPIS_LIBDIR)
+LTLINK_RUNPATH	=
+
+ifneq ($(DPDK_DIR),)
+LTLINK_RUNPATH  += -R $(DPDK_DIR)
+endif
+
+LTLINK_RUNPATH	+= \
+	-R $(RUNPATH_SQC_UTIL_LIB) \
+	-R $(RUNPATH_MODTMPL_LIB) \
+	-R $(RUNPATH_DBMGR_LIB) \
+	-R $(RUNPATH_REQ_INVOKER_LIB) \
+	-R $(RUNPATH_REQ_SCHED_LIB) \
+	-R $(RUNPATH_GRPC_BROKER_LIB) \
+	-R $(RUNPATH_RPC_LIB) \
+	-R $(RUNPATH_SRVSESSION_LIB) \
+	-R $(RUNPATH_SQC_RPC_COMMON_LIB)
+
+LTLINK_RUNPATH	+= -R $(DEST_LIBDIR)
+
+STATICBUILD	=	@STATICBUILD@
+ifndef STATICBUILD
+LT_SHARED	=	-shared
+endif
+
+LTCOMPILE_CC	= $(LIBTOOL) --mode=compile --tag=CC $(CC) $(CFLAGS) \
+	$(CPPFLAGS) $(LT_SHARED)
+LTCOMPILE_CXX	= $(LIBTOOL) --mode=compile --tag=CXX $(CXX) $(CXXFLAGS) \
+	$(CPPFLAGS) $(LT_SHARED)
+LTLIB_CC	= $(LIBTOOL) --mode=link --tag=CC \
+	$(LINK_CC) $(CFLAGS) $(LTLINK_RPATH) $(LTLINK_VERSION) $(LT_SHARED)
+LTLIB_CXX	= $(LIBTOOL) --mode=link --tag=CXX \
+	$(LINK_CXX) $(CXXFLAGS) $(LTLINK_RPATH) $(LTLINK_VERSION) $(LT_SHARED)
+LTLINK_CC	= $(LIBTOOL) --mode=link --tag=CC \
+	$(LINK_CC) $(CFLAGS) $(LTLINK_RPATH) $(LT_SHARED)
+LTLINK_CXX	= $(LIBTOOL) --mode=link --tag=CXX \
+	$(LINK_CXX) $(CXXFLAGS) $(LTLINK_RPATH) $(LT_SHARED)
+LTINSTALL_EXE	= $(LIBTOOL) --mode=install $(INSTALL_PROGRAM)
+LTINSTALL_LIB	= $(LIBTOOL) --mode=install $(INSTALL_DATA)
+LTINSTALL_HEADER= $(LIBTOOL) --mode=install $(INSTALL_DATA)
+LTCLEAN		= $(LIBTOOL) --mode=clean $(RM)
+
+HAVE_UNITY		= @HAVE_UNITY@
+UNITY_DIR		= @UNITY_DIR@
+ifdef UNITY_DIR
+UNITY_INCDIR		= $(UNITY_DIR)/include/unity
+UNITY_LIBS		= $(UNITY_DIR)/lib/libunity.a
+endif
+
+ifdef SITECONF_MK
+__SITECONF__=.post.
+include $(SITECONF_MK)
+endif

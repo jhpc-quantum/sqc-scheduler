@@ -1,0 +1,5 @@
+#pragma once
+
+#define APP_SYSCONFDIR "@APP_SYSCONFDIR@"
+#define APP_VARDIR "@APP_VARDIR@"
+

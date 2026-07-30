@@ -1,0 +1,76 @@
+#!/bin/sh
+
+srcdir=${srcdir:-"."}
+
+should_exclude() {
+    if test ! -z "${EXCLUDE_TESTS}" -a -r "${srcdir}/${1}"; then
+	echo "${EXCLUDE_TESTS}" | grep "${1}" > /dev/null 2>&1
+	if test $? -eq 0; then
+	    return 1
+	fi
+    else
+	return 0
+    fi
+}
+
+_l=`(cd ${srcdir} && ls *_test.c)` > /dev/null 2>&1
+for i in / ${_l}; do
+    _nm="`basename \"${i}\" .c`_driver.c"
+    case ${i} in
+	/)
+	    continue ;;
+	*)
+	    should_exclude "${i}"
+	    if test $? -eq 1; then
+		echo "generating ${_nm} from ${i} cancelled." 1>&2
+		continue
+	    fi
+	    srcdir=${srcdir} @abs_top_builddir@/mk/genutdriver.sh "${i}" "${_nm}"
+	    if test $? -eq 0 -a -r "${_nm}"; then
+		echo "generating ${_nm} from ${i} succeeded." 1>&2
+	    else
+		echo "generating ${_nm} from ${i} failed." 1>&2
+	    fi;;
+    esac
+done
+
+
+_s=''
+_e=''
+_l=`ls *_driver.c` 2>/dev/null
+for i in / ${_l}; do
+    case ${i} in
+	/)
+	    continue ;;
+	*)
+	    _nm=`echo ${i} | sed 's:\.c$::g'`
+	    _e="${_e} ${_nm}"
+	    _s="${_s} ${i}"
+	    ;;
+    esac
+done
+
+rm -f .ut-targets.mk
+echo "TARGETS	=	${_e}" > .ut-targets.mk
+echo ""  >> .ut-targets.mk
+echo "all::\t\$(TARGETS)" >> .ut-targets.mk
+
+rm -f .ut-srcs.mk
+echo "SRCS	=	${_s}" > .ut-srcs.mk
+
+rm -f .ut-entries.mk
+> .ut-entries.mk
+for i in ${_e}; do
+    _s=`echo "${i}" | sed -e 's:_driver::g'`
+    echo "${i}.c:\t${_s}.c" >> .ut-entries.mk
+    echo "\t@abs_top_builddir@/mk/genutdriver.sh \$< \$@" >> .ut-entries.mk
+    echo "" >> .ut-entries.mk
+    echo "${i}:\t${i}.lo" >> .ut-entries.mk
+    echo "\t\$(RM) -f \$@ .libs/lt-\$@ .libs/\$@" >> .ut-entries.mk
+    echo "\t\$(LTLINK_CC) -o \$@ \$< \$(DEP_LIBS) \$(LDFLAGS)"  >> .ut-entries.mk
+    echo ""  >> .ut-entries.mk
+    echo "generating $i build target done." 1>&2
+done
+
+exit 0
+

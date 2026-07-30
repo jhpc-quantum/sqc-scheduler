@@ -1,0 +1,9 @@
+builddir	= @builddir@
+srcdir	=   @srcdir@
+VPATH	=   @srcdir@
+MKRULES_BUILDDIR	= @MKRULES_BUILDDIR@
+
+DIRS	=	@UNITY_SRC_DIR@
+
+include $(MKRULES_BUILDDIR)/vars.mk
+include $(MKRULES_BUILDDIR)/rules.mk

@@ -1,0 +1,87 @@
+# Build directory (commonly used)
+build/
+
+# Object files
+*.o
+
+# Libraries
+*.lib
+*.lo
+*.a
+*.la
+.libs/
+
+# Shared objects (inc. Windows DLLs)
+*.dll
+*.so
+*.so.*
+*.dylib
+
+# Executables
+*.exe
+*.out
+*.app
+
+# autotools related files
+conftools/
+Makefile
+./config.h
+config.h.in
+config.log
+config.status
+autom4te.cache/
+stamp-h*
+libtool
+debian/control
+debian/control.in
+debian/rules
+debian/copyright
+debian/lagopus-DATAPLANE.postrm
+debian/lagopus-DATAPLANE.install
+mk/doxygen.conf
+mk/changename
+mk/expand-copyright
+mk/genutdriver.sh
+mk/ut-init.sh
+mk/vars.mk
+mk/DPDK-build/Makefile.dpdk
+
+# dependencies and
+.depend
+*~
+
+# Coverage
+*.gcno
+*.gcda
+*.gcov
+gcov.mk
+
+# Profiling
+gmon.out
+callgrind.*
+
+# Unity tests.
+*_test_driver.c
+*_test_driver
+*.testresult
+*_test
+*ut-entries.mk
+*ut-srcs.mk
+*ut-targets.mk
+
+# Generated file
+log
+*.pb-c.c
+*.pb-c.h
+framework/include/sqc_config.h
+framework/include/sqc_ecode.h
+framework/include/sqc_platform.h
+framework/lib/ecode.c
+framework/lib/check/check*
+framework/lib/check/modtest
+app/sqc_rpc_sched/sqc_rpc_sched
+app/sqc_rpc_client/sqc_rpc_client
+app/sqc_rpc_perf_client/sqc_rpc_perf_client
+app/include/sqc_rpc_sched_paths.h
+app/rpc/test_jwt/__*/
+

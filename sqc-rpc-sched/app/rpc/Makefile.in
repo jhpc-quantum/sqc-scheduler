@@ -1,0 +1,41 @@
+builddir	= @builddir@
+srcdir	=   @srcdir@
+VPATH	=   @srcdir@
+MKRULES_BUILDDIR	=	@MKRULES_BUILDDIR@
+
+DIRS = test_jwt
+
+TARGET_LIB_CXX          = $(APP_RPC_LIB)
+INSTALL_LIB_TARGETS     = $(TARGET_LIB_CXX)
+INSTALL_LIB_DIR         = $(DEST_LIBDIR)
+
+TARGETS					= $(TARGET_LIB_CXX)
+
+SRCS					= rpc.pb-c.c rpc_auth_method.c rpc_file_util.c rpc_job_info.c \
+                          rpc_jwt_client.cpp rpc_jwt_server.cpp rpc_msg_util.c rpc_munge.c \
+						  rpc_session_client.c rpc_session_internal.c rpc_session_server.c
+
+include $(MKRULES_BUILDDIR)/vars.mk
+
+CPPFLAGS		+=		-I$(APP_INC_BUILDDIR)
+CPPFLAGS		+=		-I$(APP_INC_SRCDIR)
+CPPFLAGS		+=		$(PROTOBUF_C_CFLAGS)
+CPPFLAGS		+=		$(MUNGE_CFLAGS)
+CPPFLAGS		+=		$(JWT_CPP_CPPFLAGS)
+
+DEP_LIBS		+=		$(DEP_APP_DBMGR_LIB)
+DEP_LIBS		+=		$(DEP_APP_REQ_SCHED_LIB)
+DEP_LIBS		+=		$(PROTOBUF_C_LIBS)
+DEP_LIBS		+=		$(MUNGE_LIBS)
+DEP_LIBS		+=		$(JWT_CPP_LIBS)
+
+include $(MKRULES_BUILDDIR)/rules.mk
+
+generate:: rpc.pb-c.c rpc.pb-c.h
+
+rpc.pb-c.c rpc.pb-c.h:: rpc.proto
+	$(PROTOC_C) --c_out=. -I$(srcdir) $<
+
+clean::
+	rm -f rpc.pb-c.c
+	rm -f rpc.pb-c.h

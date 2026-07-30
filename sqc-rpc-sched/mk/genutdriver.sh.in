@@ -1,0 +1,34 @@
+#!/bin/sh
+
+srcdir=${srcdir:-"."}
+
+gen_run_entry () {
+    _in="${1}"
+    _out="${2}"
+    _t=`egrep -n '[[:space:]]*\btest_[0-9a-zA-Z_]*[[:space:]]*\([void]*\)[[:space:]]*\{*' "${srcdir}/${_in}" | sed -e 's:static::g' -e 's:void::g' -e 's:(.*$::g' -e 's:[[:space:]]*::g' 2>/dev/null`
+    if test ! -z "${_t}"; then
+        for i in ${_t}; do
+	    _n=`echo "${i}" | awk -F: '{ print $1 }'`
+	    _f=`echo "${i}" | awk -F: '{ print $NF }'`
+    	    echo "RUN_TEST(${_f}, ${_n}L);" >> "${_out}"
+	done
+    fi
+}
+
+if test $# -ne 2; then
+    exit 1
+fi
+
+if test -r "${srcdir}/${1}"; then
+    _nm="${2}"
+    rm -f "${_nm}"
+    
+    echo "#include \"${1}\"" > "${_nm}"
+    echo "int main(void) {" >> "${_nm}"
+    echo "UnityBegin(\"${1}\");" >> "${_nm}"
+    gen_run_entry "${1}" "${_nm}"
+    echo "return (UnityEnd());" >> "${_nm}"
+    echo "}" >> "${_nm}"
+    exit 0
+fi
+exit 1

@@ -1,0 +1,12 @@
+Copyright 2024-2026 RIKEN.
+
+The following directories and files:
+
+sqc-rpc-sched/framework
+sqc-rpc-sched/mk
+sqc-rpc-sched/configure and any other build configuration template files
+
+are including portions of software developed by Nippon Telegraph and
+Telephone Corporation and Software Research Associates, Inc. as a
+framework layer of Lagopus Software Switch
+(https://github.com/lagopus/lagopus.)

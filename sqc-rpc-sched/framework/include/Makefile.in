@@ -1,0 +1,33 @@
+builddir	= @builddir@
+srcdir	=   @srcdir@
+VPATH	=   @srcdir@
+MKRULES_BUILDDIR	= @MKRULES_BUILDDIR@
+
+include $(MKRULES_BUILDDIR)/vars.mk
+
+INSTALL_HEADER_DIR	= $(DEST_HDRDIR_TOP)
+
+INSTALL_HEADER_TARGETS	= sqc_config.h sqc_platform.h \
+	sqc_apis.h sqc_ip_addr.h sqc_pooled_thread_internal.h \
+	sqc_argv0.h sqc_lock.h sqc_qmuxer.h \
+	sqc_bbq.h sqc_logger.h sqc_qsort.h \
+	sqc_callout.h sqc_macros.h sqc_runnable.h \
+	sqc_callout_internal.h sqc_mainloop.h sqc_runnable_funcs.h \
+	sqc_callout_task_funcs.h sqc_module_apis.h sqc_runnable_internal.h \
+	sqc_callout_task_state.h sqc_numa.h sqc_session.h \
+	sqc_cbuffer.h sqc_perror.h deprecated/sqc_session_tls.h \
+	sqc_chrono.h sqc_pipeline_stage.h sqc_signal.h \
+	sqc_pipeline_stage_funcs.h sqc_statistic.h \
+	sqc_dstring.h sqc_pipeline_stage_internal.h sqc_strutils.h \
+	sqc_ecode.h sqc_task.h \
+	sqc_error.h sqc_pool.h sqc_task_internal.h \
+	sqc_gstate.h sqc_pool_internal.h sqc_thread.h \
+	sqc_hashmap.h sqc_poolable.h sqc_thread_internal.h \
+	sqc_heapcheck.h sqc_poolable_internal.h sqc_types.h \
+	sqc_includes.h sqc_pooled_thread.h
+
+
+include $(MKRULES_BUILDDIR)/rules.mk
+
+distclean::
+	$(RM) sqc_config.h sqc_platform.h *.new *.bak

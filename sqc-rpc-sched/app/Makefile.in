@@ -1,0 +1,12 @@
+builddir	= @builddir@
+srcdir	=   @srcdir@
+VPATH	=   @srcdir@
+MKRULES_BUILDDIR	=	@MKRULES_BUILDDIR@
+
+include $(MKRULES_BUILDDIR)/vars.mk
+
+DIRS	=	include sqc_rpc_common dbmgr module_tmpl req_invoker req_sched \
+			rpc srv_session grpc_broker sqc_rpc_sched sqc_rpc_client \
+			sqc_rpc_perf_client
+
+include $(MKRULES_BUILDDIR)/rules.mk

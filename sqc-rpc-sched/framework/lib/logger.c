@@ -1,0 +1,799 @@
+#include "sqc_apis.h"
+
+
+
+
+
+static pthread_mutex_t s_log_lock = PTHREAD_MUTEX_INITIALIZER;
+static FILE *s_log_fd = NULL;
+static sqc_log_destination_t s_log_dst = SQC_LOG_EMIT_TO_UNKNOWN;
+static char s_log_arg[PATH_MAX] = {0};
+static bool s_do_multi_process = false;
+static bool s_do_date = false;
+static uint16_t s_log_level = SQC_LOG_LEVEL_DEBUG;
+static uint16_t s_dbg_level = 0;
+static bool s_is_fork_initialized = false;
+#ifdef HAVE_PROCFS_SELF_EXE
+static char s_exefile[PATH_MAX];
+#endif /* HAVE_PROCFS_SELF_EXE */
+static const uint64_t s_min_rotate_size = 4*1024;
+static size_t s_rotate_size = 0;                          // zero means size is infinitiy.
+static const size_t s_rotate_size_default = 5*1024*1024;
+static const size_t s_max_msg = 4096;
+static int s_max_rotate_suffix = 1000;
+
+
+static const char *const s_log_level_strs[] = {
+  "",
+  "[DEBUG]",
+  "[INFO ]",
+  "[NOTE ]",
+  "[WARN ]",
+  "[ERROR]",
+  "[FATAL]",
+  NULL
+};
+
+static int const s_syslog_priorities[] = {
+  LOG_INFO,
+  LOG_DEBUG,
+  LOG_INFO,
+  LOG_NOTICE,
+  LOG_WARNING,
+  LOG_ERR,
+  LOG_CRIT
+};
+
+
+static struct flock s_fl_lck = {
+  .l_type = F_WRLCK,
+  .l_start = 0,
+  .l_whence = SEEK_SET,
+  .l_len = 0,
+  .l_pid = 0,
+};
+
+static struct flock s_fl_unl = {
+  .l_type = F_UNLCK,
+  .l_start = 0,
+  .l_whence = SEEK_SET,
+  .l_len = 0,
+  .l_pid = 0,
+};
+
+static volatile bool s_is_fd_locked = false;
+
+static struct {
+  char  unit;
+  int   mag;
+} unit_table[] = {
+  {.unit = 'k', 1024},
+  {.unit = 'K', 1024},
+  {.unit = 'm', 1024*1024},
+  {.unit = 'M', 1024*1024},
+  {.unit = 'g', 1024*1024*1024},
+  {.unit = 'G', 1024*1024*1024},
+  {.unit = '\0', 1},
+};
+
+
+
+
+static int
+s_get_magnification(char u) {
+  for(int i = 0; unit_table[i].unit != '\0'; i++) {
+    if (unit_table[i].unit == u) {
+      return unit_table[i].mag;
+    }
+  }
+  return 1;
+}
+
+static void
+s_child_at_fork(void) {
+  (void)pthread_mutex_init(&s_log_lock, NULL);
+}
+
+
+
+
+
+static inline void
+s_lock_fd(FILE *fd, bool cmd) {
+  if (likely(fd != NULL)) {
+    (void)fcntl(fileno(fd), F_SETLKW,
+                cmd == true ? &s_fl_lck : &s_fl_unl);
+  }
+}
+
+
+static inline void
+s_lock(void) {
+  if (likely(s_do_multi_process == true &&
+             s_log_dst == SQC_LOG_EMIT_TO_FILE &&
+             s_log_fd != NULL)) {
+    (void)pthread_mutex_lock(&s_log_lock);
+    if (likely(s_is_fd_locked == false)) {
+      s_lock_fd(s_log_fd, true);
+      s_is_fd_locked = true;
+    }
+  }
+}
+
+
+static inline void
+s_unlock(void) {
+  if (likely(s_is_fd_locked == true)) {
+    s_lock_fd(s_log_fd, false);
+    s_is_fd_locked = false;
+  }
+  (void)pthread_mutex_unlock(&s_log_lock);
+}
+
+
+static inline void
+s_log_final(bool full) {
+  if (s_log_dst == SQC_LOG_EMIT_TO_FILE) {
+    if (s_log_fd != NULL) {
+      s_lock_fd(s_log_fd, false);
+      (void)fflush(s_log_fd);
+      (void)fclose(s_log_fd);
+      s_log_fd = NULL;
+    }
+  } else if (s_log_dst == SQC_LOG_EMIT_TO_SYSLOG) {
+    closelog();
+  }
+  if (full == true) {
+    s_log_dst = SQC_LOG_EMIT_TO_UNKNOWN;
+  }
+}
+
+
+static inline bool
+s_is_file(const char *file) {
+  bool ret = false;
+  struct stat s;
+
+  if (stat(file, &s) == 0) {
+    if (S_ISDIR(s.st_mode)) {
+      return ret;
+    } else {
+      ret = true;
+    }
+  } else {
+    ret = true;
+  }
+
+  return ret;
+}
+
+
+static inline void
+s_set_arg(const char *arg) {
+  char log_r[PATH_MAX];
+  if (IS_VALID_STRING(arg) == true && arg != s_log_arg) {
+    (void) realpath(arg, log_r);
+    (void)snprintf(s_log_arg, sizeof(s_log_arg), "%s", log_r);
+  }
+}
+
+
+static inline void
+s_reset_arg(void) {
+  (void)memset((void *)s_log_arg, 0, sizeof(s_log_arg));
+}
+
+
+static inline bool
+s_log_init(sqc_log_destination_t dst,
+           const char *arg,
+           bool multi_process,
+           bool emit_date,
+           uint16_t log_level,
+           uint16_t debug_level,
+           size_t rotate_size,
+           bool full) {
+  bool ret = false;
+
+  if (s_is_fork_initialized == false) {
+    (void)pthread_atfork(NULL, NULL, s_child_at_fork);
+    s_is_fork_initialized = true;
+  }
+
+  if (dst == SQC_LOG_EMIT_TO_FILE ||
+      dst == SQC_LOG_EMIT_TO_UNKNOWN) {
+    int ofd = -INT_MAX;
+
+    s_log_final(full);
+
+    if (IS_VALID_STRING(arg) == true &&
+        dst == SQC_LOG_EMIT_TO_FILE &&
+        s_is_file(arg) == true) {
+      s_set_arg(arg);
+      ofd = open(s_log_arg, O_RDWR | O_CREAT | O_APPEND, 0600);
+      if (ofd >= 0) {
+        s_log_fd = fdopen(ofd, "a+");
+        if (s_log_fd != NULL) {
+          ret = true;
+        }
+      }
+    } else {
+      s_reset_arg();
+      s_log_fd = NULL;	/* use stderr. */
+      ret = true;
+    }
+  } else if (dst == SQC_LOG_EMIT_TO_SYSLOG) {
+    if (IS_VALID_STRING(arg) == true) {
+
+      s_log_final(true);
+
+      /*
+       * Note that the syslog(3) uses the first argument of openlog(3)
+       * STATICALLY. So DON'T pass any heap addresses to openlog(3). I
+       * never knew that until this moment, BTW.
+       */
+      s_set_arg(arg);
+      openlog(s_log_arg, 0, LOG_USER);
+
+      ret = true;
+    }
+  }
+
+  if (ret == true) {
+    s_log_dst = dst;
+    s_do_multi_process = multi_process;
+    s_do_date = emit_date;
+    if (log_level > SQC_LOG_LEVEL_MIN && log_level < SQC_LOG_LEVEL_MAX) {
+      s_log_level = log_level;
+    }
+    s_dbg_level = debug_level;
+    if (rotate_size == 0 || rotate_size > s_min_rotate_size) {
+      s_rotate_size = rotate_size;
+    } else {
+      s_rotate_size = s_min_rotate_size;
+    }
+  } else {
+    s_reset_arg();
+  }
+
+  return ret;
+}
+
+
+static inline bool
+s_log_reinit(bool full) {
+  const char *arg =
+    (IS_VALID_STRING(s_log_arg) == true) ? s_log_arg : NULL;
+  bool ret = s_log_init(s_log_dst, arg,
+                        s_do_multi_process, s_do_date, s_log_level, s_dbg_level, s_rotate_size, full);
+
+  return ret;
+}
+
+
+static inline const char *
+s_get_level_str(sqc_log_level_t l) {
+  if ((int)l >= (int)SQC_LOG_LEVEL_UNKNOWN &&
+      (int)l <= (int)SQC_LOG_LEVEL_FATAL) {
+    return s_log_level_strs[(int)l];
+  }
+  return NULL;
+}
+
+
+static inline int
+s_get_syslog_priority(sqc_log_level_t l) {
+  if ((int)l >= (int)SQC_LOG_LEVEL_UNKNOWN &&
+      (int)l <= (int)SQC_LOG_LEVEL_FATAL) {
+    return s_syslog_priorities[(int)l];
+  }
+  return LOG_INFO;
+}
+
+
+static inline size_t
+s_get_date_str(char *buf, size_t buf_len) {
+  const char *fmt = "[%a %h %d %T %Z %Y]";
+  time_t x = time(NULL);
+  return strftime(buf, buf_len, fmt, localtime(&x));
+}
+
+static inline int
+s_get_rotate_str(char *buf, size_t buf_len, const char *str, int suf) {
+  int ret, rlen = 0;
+  const char *fmt = "%Y%m%d-%H%M%S";
+  time_t x = time(NULL);
+  ret = snprintf(buf, buf_len, "%s.", str);
+  if (ret < 0 || (size_t) ret >= buf_len) {
+    return -1;
+  }
+  rlen = ret;
+  ret = (int) strftime(&buf[rlen], buf_len - (size_t) rlen, fmt, localtime(&x));
+  if (ret == 0) {
+    return -1;
+  }
+  if (suf != 0) {
+    rlen += ret;
+    ret = snprintf(&buf[rlen], buf_len - (size_t) rlen, "-%d", suf);
+    if (ret < 0 || (size_t) ret >= buf_len - (size_t) rlen) {
+      return -1;
+    }
+  }
+  rlen += ret;
+  return rlen;
+}
+
+static inline int
+s_get_rotate_str_checked(char *buf, size_t buf_len, const char *str) {
+  int ret, r;
+  struct stat s;
+
+  for(int i = 0; i < s_max_rotate_suffix; i++) {
+    r = s_get_rotate_str(buf, (size_t) buf_len, str, i);
+    if (r < 0) {
+      return -1;
+    }
+
+    ret = stat(buf, &s);
+    if (ret == -1 && errno == ENOENT) {
+      return 0;
+    }
+  }
+
+  return -1;
+}
+
+/* assumes s_lock() called */
+static void
+s_do_log_rotate_nolock(size_t msg_len) {
+  int ret, r;
+  char rname[PATH_MAX];
+  struct stat s;
+
+  if (s_log_fd == NULL || s_rotate_size == 0) {
+    return;
+  }
+  ret = fstat(fileno(s_log_fd), &s);
+  if (ret < 0 || s.st_size == 0 || (size_t) s.st_size + msg_len < s_rotate_size) {
+    return;
+  }
+
+  /* rename log to log.YYYYMMDD-HHMMSS */
+  r = s_get_rotate_str_checked(rname, (size_t) sizeof(rname), s_log_arg);
+  if (r < 0) {
+    return;
+  }
+  (void)fflush(s_log_fd);
+  (void)fclose(s_log_fd);
+  ret = rename(s_log_arg, rname);
+  if (ret < 0) {
+    return;
+  }
+  s_log_fd = fopen(s_log_arg, "a+");
+  return;
+}
+
+static inline void
+s_do_log(sqc_log_level_t l, const char *msg) {
+  FILE *fd;
+  int o_cancel_state;
+
+  (void)pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &o_cancel_state);
+
+  s_lock();
+  {
+    switch (s_log_dst) {
+      case SQC_LOG_EMIT_TO_FILE:
+      case SQC_LOG_EMIT_TO_UNKNOWN: {
+        s_do_log_rotate_nolock(strnlen(msg, s_max_msg - 1));
+        fd = (s_log_fd != NULL) ? s_log_fd : stderr;
+        (void)fprintf(fd, "%s", msg);
+        (void)fflush(fd);
+        break;
+      }
+      case SQC_LOG_EMIT_TO_SYSLOG: {
+        int prio = s_get_syslog_priority(l);
+        syslog(prio, "%s", msg);
+      }
+    }
+  }
+  s_unlock();
+
+  (void)pthread_setcancelstate(o_cancel_state, NULL);
+}
+
+
+
+
+
+void
+sqc_log_emit(sqc_log_level_t lv,
+                uint64_t debug_level,
+                const char *file,
+                int line,
+                const char *func,
+                const char *fmt, ...) {
+  if ((lv >= s_log_level && 
+      (lv != SQC_LOG_LEVEL_DEBUG ||
+       ((uint16_t)((debug_level & 0xffff)) <= (s_dbg_level))))) {
+    va_list args;
+    char date_buf[32];
+    char msg[s_max_msg];
+    size_t hdr_len;
+    size_t left_len;
+    char thd_info_buf[1024];
+    pthread_t tid;
+    char thd_name[32];
+    int st = 0;
+    int s_errno = errno;
+
+    if (s_do_date == true) {
+      s_get_date_str(date_buf, sizeof(date_buf));
+    } else {
+      date_buf[0] = '\0';
+    }
+
+    tid = pthread_self();
+#ifdef HAVE_PTHREAD_SETNAME_NP
+    st = pthread_getname_np(tid, thd_name, sizeof(thd_name));
+#else
+    thd_name[0] = '\0';
+    st = -1;
+#endif /* HAVE_PTHREAD_SETNAME_NP */
+#if SIZEOF_PTHREAD_T == SIZEOF_INT64_T
+#define TIDFMT "0x" SQCIDS(016, x)
+#elif SIZEOF_PTHREAD_T == SIZEOF_INT
+#define TIDFMT "0x" SQCIDS(08, x)
+#endif /* SIZEOF_PTHREAD_T == SIZEOF_INT64_T ... */
+    if (st == 0 && IS_VALID_STRING(thd_name) == true) {
+      snprintf(thd_info_buf, sizeof(thd_info_buf), "[%u:" TIDFMT ":%s]",
+               (unsigned int)getpid(),
+               tid,
+               thd_name);
+    } else {
+      snprintf(thd_info_buf, sizeof(thd_info_buf), "[%u:" TIDFMT "]",
+               (unsigned int)getpid(),
+               tid);
+    }
+
+    va_start(args, fmt);
+    va_end(args);
+
+    hdr_len = (size_t)snprintf(msg, sizeof(msg),
+                               "%s%s%s:%s:%d:%s: ",
+                               date_buf,
+                               s_get_level_str(lv),
+                               thd_info_buf,
+                               file, line, func);
+
+    /*
+     * hdr_len indicates the buffer length WITHOUT '\0'.
+     */
+    left_len = sizeof(msg) - hdr_len;
+    if (left_len > 1) {
+      (void)vsnprintf(msg + hdr_len, left_len -1, fmt, args);
+    }
+
+    s_do_log(lv, msg);
+
+    errno = s_errno;
+  }
+}
+
+
+sqc_result_t
+sqc_log_initialize(sqc_log_destination_t dst,
+                      const char *arg,
+                      bool multi_process,
+                      bool emit_date,
+                      uint16_t log_level,
+                      uint16_t debug_level,
+                      size_t rotate_size) {
+  sqc_result_t ret = SQC_RESULT_ANY_FAILURES;
+  int s_errno = errno;
+
+  (void)pthread_mutex_lock(&s_log_lock);
+  ret =
+      (s_log_init(dst, arg,
+                  multi_process, emit_date, log_level, debug_level, rotate_size, true) == true) ?
+      SQC_RESULT_OK : SQC_RESULT_ANY_FAILURES;
+  (void)pthread_mutex_unlock(&s_log_lock);
+
+  errno = s_errno;
+  sqc_msg_info("Logger initialized: log file [%s] log rotate size %d log level %d log debug level %d.\n",
+                  s_log_arg, (int) s_rotate_size, s_log_level, s_dbg_level);
+
+  return ret;
+}
+
+
+sqc_result_t
+sqc_log_reinitialize(void) {
+  sqc_result_t ret = SQC_RESULT_ANY_FAILURES;
+  int s_errno = errno;
+
+  sqc_msg_debug(10, "Reinitialize the logger.\n");
+
+  (void)pthread_mutex_lock(&s_log_lock);
+  ret = (s_log_reinit(false) == true) ?
+        SQC_RESULT_OK : SQC_RESULT_ANY_FAILURES;
+  (void)pthread_mutex_unlock(&s_log_lock);
+
+  errno = s_errno;
+  sqc_msg_info("Logger reinitialized: log file [%s] log rotate size %d log level %d log debug level %d.\n",
+                  s_log_arg, (int) s_rotate_size, s_log_level, s_dbg_level);
+
+  return ret;
+}
+
+
+void
+sqc_log_finalize(void) {
+  int s_errno = errno;
+
+  sqc_msg_debug(10, "Finalize the logger.\n");
+
+  (void)pthread_mutex_lock(&s_log_lock);
+  s_log_final(true);
+  (void)pthread_mutex_unlock(&s_log_lock);
+
+  errno = s_errno;
+}
+
+
+void
+sqc_log_sync_for_fork(void) {
+  int s_errno = errno;
+
+  sqc_msg_debug(10, "Synching the logger.\n");
+
+  (void)pthread_mutex_lock(&s_log_lock);
+  s_log_final(false);
+  (void)pthread_mutex_unlock(&s_log_lock);
+
+  errno = s_errno;
+}
+
+void
+sqc_log_set_log_level(uint16_t l) {
+  (void)pthread_mutex_lock(&s_log_lock);
+  s_log_level = l;
+  (void)pthread_mutex_unlock(&s_log_lock);
+}
+
+
+uint16_t
+sqc_log_get_log_level(void) {
+  uint16_t ret;
+
+  (void)pthread_mutex_lock(&s_log_lock);
+  ret = s_log_level;
+  (void)pthread_mutex_unlock(&s_log_lock);
+
+  return ret;
+}
+
+void
+sqc_log_set_rotate_size(size_t sz) {
+  (void)pthread_mutex_lock(&s_log_lock);
+  s_rotate_size = sz;
+  (void)pthread_mutex_unlock(&s_log_lock);
+}
+
+size_t
+sqc_log_get_rotate_size(void) {
+  size_t ret;
+
+  (void)pthread_mutex_lock(&s_log_lock);
+  ret = s_rotate_size;
+  (void)pthread_mutex_unlock(&s_log_lock);
+
+  return ret;
+}
+
+void
+sqc_log_set_filename(const char *n) {
+  (void)pthread_mutex_lock(&s_log_lock);
+  strncpy(s_log_arg, n, sizeof(s_log_arg));
+  (void)pthread_mutex_unlock(&s_log_lock);
+}
+
+const char *
+sqc_log_get_filename(void) {
+  return (const char *) s_log_arg;
+}
+
+void
+sqc_log_set_debug_level(uint16_t l) {
+  (void)pthread_mutex_lock(&s_log_lock);
+  s_dbg_level = l;
+  (void)pthread_mutex_unlock(&s_log_lock);
+}
+
+
+uint16_t
+sqc_log_get_debug_level(void) {
+  uint16_t ret;
+
+  (void)pthread_mutex_lock(&s_log_lock);
+  ret = s_dbg_level;
+  (void)pthread_mutex_unlock(&s_log_lock);
+
+  return ret;
+}
+
+
+sqc_log_destination_t
+sqc_log_get_destination(const char **arg) {
+  sqc_log_destination_t ret = SQC_LOG_EMIT_TO_UNKNOWN;
+
+  (void)pthread_mutex_lock(&s_log_lock);
+  ret = s_log_dst;
+  if (arg != NULL) {
+    *arg = s_log_arg;
+  }
+  (void)pthread_mutex_unlock(&s_log_lock);
+
+  return ret;
+}
+
+
+void
+sqc_log_set_multi_process(bool v) {
+  if (s_log_dst == SQC_LOG_EMIT_TO_FILE) {
+    (void)pthread_mutex_lock(&s_log_lock);
+    s_do_multi_process = v;
+    (void)pthread_mutex_unlock(&s_log_lock);
+    sqc_msg_debug(5, "set logger multi-process mode %s.\n",
+                     v == true ? "on" : "off");
+  }
+}
+
+
+sqc_result_t
+sqc_log_get_multi_process(bool *v) {
+  if (v != NULL) {
+    (void)pthread_mutex_lock(&s_log_lock);
+    *v = s_do_multi_process;
+    (void)pthread_mutex_unlock(&s_log_lock);
+  }
+
+  return SQC_RESULT_OK;
+}
+
+
+
+
+
+static pthread_once_t s_once = PTHREAD_ONCE_INIT;
+static bool s_is_inited = false;
+static void s_ctors(void) __attr_constructor__(104);
+static void s_dtors(void) __attr_destructor__(104);
+
+
+typedef bool	(*path_verify_func_t)(const char *path,
+                                    char *buf,
+                                    size_t buflen);
+
+
+static inline bool
+s_is_valid_path(const char *path, char *buf, size_t buflen) {
+  bool ret = false;
+
+  if (IS_VALID_STRING(path) == true &&
+      buf != NULL) {
+    const char *org = path;
+    char *t = NULL;
+
+    while (isspace((int)*org)) {
+      org++;
+    }
+    if (sqc_str_trim_right(org, "\t\r\n ", &t) >= 0) {
+      if (strlen(t) > 0) {
+        snprintf(buf, buflen, "%s", t);
+        ret = true;
+      }
+      free((void *)t);
+    }
+  }
+
+  return ret;
+}
+
+
+static inline char *
+s_validate_path(const char *file, path_verify_func_t func) {
+  static char buf[PATH_MAX];
+
+  if ((func)(file, buf, sizeof(buf)) == true) {
+    return buf;
+  }
+
+  return NULL;
+}
+
+
+static void
+s_once_proc(void) {
+  char *log_lvl_str = getenv("SQC_LOG_LEVEL");
+  char *dbg_lvl_str = getenv("SQC_LOG_DEBUGLEVEL");
+  char *logfile = getenv("SQC_LOG_FILE");
+  char *log_rotate_size_str_env = getenv("SQC_LOG_ROTATESIZE");
+  char *log_rotate_size_str = NULL;
+  uint16_t l = 0;
+  uint16_t d = 0;
+  size_t r = s_rotate_size_default;
+  sqc_log_destination_t log_dst = SQC_LOG_EMIT_TO_UNKNOWN;
+
+  if (IS_VALID_STRING(log_lvl_str) == true) {
+    uint16_t tmp = 0;
+    if (sqc_str_parse_uint16(log_lvl_str, &tmp) == SQC_RESULT_OK) {
+      l = tmp;
+    }
+  }
+  if (IS_VALID_STRING(dbg_lvl_str) == true) {
+    uint16_t tmp = 0;
+    if (sqc_str_parse_uint16(dbg_lvl_str, &tmp) == SQC_RESULT_OK) {
+      d = tmp;
+    }
+  }
+  if ((logfile = s_validate_path(logfile, s_is_valid_path)) != NULL) {
+    log_dst = SQC_LOG_EMIT_TO_FILE;
+  }
+  if (IS_VALID_STRING(log_rotate_size_str_env) == true) {
+    int mag = 1;
+    uint32_t tmp = 0;
+    log_rotate_size_str = strndup(log_rotate_size_str_env, PATH_MAX);
+    if (log_rotate_size_str == NULL) {
+      sqc_exit_error(1, "logger initialization error.\n");
+    }
+    if (isalpha(log_rotate_size_str[strlen(log_rotate_size_str) - 1])) {
+      mag = s_get_magnification(log_rotate_size_str[strlen(log_rotate_size_str) - 1]);
+      log_rotate_size_str[strlen(log_rotate_size_str) - 1] = '\0';
+    }
+    if (sqc_str_parse_uint32(log_rotate_size_str, &tmp) == SQC_RESULT_OK) {
+      r = tmp * (uint32_t) mag;
+    }
+  }
+
+  if (sqc_log_initialize(log_dst, logfile, false, true, l, d, r) !=
+      SQC_RESULT_OK) {
+    sqc_exit_error(1, "logger initialization error.\n");
+  }
+
+  if (d > 0) {
+    sqc_msg_debug(d, "Logger debug level is set to: %d.\n", d);
+  }
+
+#ifdef HAVE_PROCFS_SELF_EXE
+  if (readlink("/proc/self/exe", s_exefile, PATH_MAX) != -1) {
+    (void)sqc_set_command_name(s_exefile);
+    sqc_msg_debug(10, "set the command name '%s'.\n",
+                     sqc_get_command_name());
+  }
+#endif /* HAVE_PROCFS_SELF_EXE */
+
+  s_is_inited = true;
+  free(log_rotate_size_str);
+}
+
+
+static inline void
+s_init(void) {
+  (void)pthread_once(&s_once, s_once_proc);
+}
+
+
+static void
+s_ctors(void) {
+  s_init();
+}
+
+
+static void
+s_dtors(void) {
+  if (s_is_inited == true) {
+    sqc_log_finalize();
+  }
+}
+

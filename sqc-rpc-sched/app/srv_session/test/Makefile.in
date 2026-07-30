@@ -1,0 +1,18 @@
+builddir	= @builddir@
+srcdir	=   @srcdir@
+VPATH	=   @srcdir@
+MKRULES_BUILDDIR	= @MKRULES_BUILDDIR@
+
+include $(MKRULES_BUILDDIR)/vars.mk
+
+UT_CPPFLAGS	=	-I$(APP_INC_SRCDIR) -I$(APP_SRVSESSION_SRCDIR)
+UT_CFLAGS	=	-Wno-format-zero-length -Wno-format-extra-args
+UT_CXXFLAGS	=	-Wno-format-zero-length -Wno-format-extra-args
+UT_DEP_LIBS	=	$(DEP_SQC_UTIL_LIB) $(PROTOBUF_C_LIBS)
+
+LDFLAGS		+=
+
+EXCLUDE_TESTS	=
+
+include $(MKRULES_BUILDDIR)/unit-test.mk
+

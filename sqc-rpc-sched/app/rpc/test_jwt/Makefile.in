@@ -1,0 +1,55 @@
+builddir	= @builddir@
+srcdir	=   @srcdir@
+VPATH	=   @srcdir@
+MKRULES_BUILDDIR	= @MKRULES_BUILDDIR@
+
+TARGET_EXE		=		jwt_verify_test
+TARGETS			=		$(TARGET_EXE)
+SRCS			=		jwt_verify_test.c
+
+include $(MKRULES_BUILDDIR)/vars.mk
+
+CPPFLAGS		+=		-I$(builddir)/..
+CPPFLAGS		+=		-I$(srcdir)/..
+CPPFLAGS		+=		-I$(APP_INC_BUILDDIR)
+CPPFLAGS		+=		-I$(APP_INC_SRCDIR)
+CPPFLAGS		+=		-I$(UNITY_INCDIR)
+CPPFLAGS		+=		$(JWT_CPP_CPPFLAGS)
+
+DEP_LIBS		+=		$(DEP_SQC_UTIL_LIB)
+DEP_LIBS		+=		$(PROTOBUF_C_LIBS)
+DEP_LIBS		+=		$(DEP_APP_RPC_LIB)
+DEP_LIBS		+=		$(DEP_APP_SQC_RPC_COMMON_LIB)
+DEP_LIBS		+=		$(DEP_APP_DBMGR_LIB)
+DEP_LIBS		+=		$(JWT_CPP_LIBS)
+DEP_LIBS		+=		$(DEP_SQC_UTIL_LIB)
+DEP_LIBS		+=		$(UNITY_LIBS)
+
+ifeq ($(IS_DEVELOPER), yes)
+all:: $(TARGETS)
+
+generate::
+	env srcdir=$(srcdir) $(srcdir)/create_test_data.sh
+
+ut-run::
+	for conf_dir in / `ls -d __* 2>/dev/null`; do \
+		test $$conf_dir = / && continue; \
+		exp_result=`cat $$conf_dir/exp_result.txt`; \
+		echo "==> $$conf_dir <=="; \
+		./$(TARGET_EXE) $$conf_dir $$exp_result; \
+	done
+
+clean::
+	for conf_dir in / `ls -d __* 2>/dev/null`; do \
+		test $$conf_dir = / && continue; \
+		$(RM) -r $$conf_dir; \
+	done
+
+else
+
+TARGET_EXE		=
+TARGETS			=
+SRCS			=
+endif
+
+include $(MKRULES_BUILDDIR)/rules.mk

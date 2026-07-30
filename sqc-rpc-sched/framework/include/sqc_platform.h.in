@@ -1,0 +1,20 @@
+#pragma once
+
+#include "sqc_config.h"
+
+#define @OSDEF@
+#define @CPUDEF@
+
+#ifdef WORDS_BIGENDIAN
+#define SQC_BIG_ENDIAN
+#else
+#define SQC_LITTLE_ENDIAN
+#endif /* WORDS_BIGENDIAN */
+
+#if SIZEOF_LONG_INT == 8
+#define SQC_ARCH_64_BITS
+#elif SIZEOF_LONG_INT == 4
+#define SQC_ARCH_32_BITS
+#else
+#error Sorry we can not live like this.
+#endif /* SIZEOF_LONG_INT == 8 || SIZEOF_LONG_INT == 4 */

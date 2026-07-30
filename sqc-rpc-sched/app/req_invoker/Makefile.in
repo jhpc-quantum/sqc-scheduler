@@ -1,0 +1,25 @@
+builddir	= @builddir@
+srcdir	=   @srcdir@
+VPATH	=   @srcdir@
+MKRULES_BUILDDIR	=	@MKRULES_BUILDDIR@
+
+LDFLAGS			+= -L$(REXAPIS_LIBDIR) -lrexapis
+
+TARGET_LIB              = $(APP_REQ_INVOKER_LIB)
+INSTALL_LIB_TARGETS     = $(TARGET_LIB)
+INSTALL_LIB_DIR         = $(DEST_LIBDIR)
+
+TARGETS                 = $(TARGET_LIB)
+
+include $(MKRULES_BUILDDIR)/vars.mk
+
+CPPFLAGS	+=	-I$(APP_INC_BUILDDIR)
+CPPFLAGS	+=	-I$(APP_INC_SRCDIR)
+CPPFLAGS	+=	-I$(REXAPIS_INCDIR)
+
+DEP_LIBS	+=	$(DEP_APP_DBMGR_LIB)
+DEP_LIBS	+=	$(REXAPIS_LIBS)
+
+SRCS		=	req_invoker.c
+
+include $(MKRULES_BUILDDIR)/rules.mk

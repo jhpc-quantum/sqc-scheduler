@@ -1,0 +1,52 @@
+builddir	= @builddir@
+srcdir	=   @srcdir@
+VPATH	=   @srcdir@
+MKRULES_BUILDDIR	= @MKRULES_BUILDDIR@
+
+include $(MKRULES_BUILDDIR)/vars.mk
+
+DIRS	=	mk/DPDK-build \
+		framework/lib \
+		framework/include \
+		app
+
+include $(MKRULES_BUILDDIR)/rules.mk
+
+clean::
+	$(RM) -r autom4te.cache config.log
+	find . -type f \( \
+		-name '*~' -o \
+		-name 'core' -o \
+		-name '*.core' -o \
+		-name 'vgcore.*' \
+	\) -exec rm -f {} \;
+
+distclean::	clean
+	$(RM) -r ./tools/unity/* ./tools/unity/.??*
+	$(RM) config.* mk/vars.mk mk/doxygen.conf ./libtool \
+		mk/changeincludes mk/changename mk/initdepend \
+		mk/genutdriver.sh mk/ut-init.sh \
+		framework/include/sqc_ecode.h \
+		framework/lib/ecode.c \
+		mk/dpdk.mk mk/DPDK-build/Makefile \
+		framework/lib/check/Makefile
+	find mk -type l -name rules.mk -exec rm -f {} \;
+	find mk -type l -name unit-test.mk -exec rm -f {} \;
+	find . -type f \( \
+		-name '.depend' \
+	\) | xargs $(RM)
+	find . -type d \( \
+		-name '.libs' \
+	\) | xargs $(RM) -r
+		$(RM) framework/lib/check/Makefile
+
+ultimateclean:	distclean
+	@git clean -n -f -d -x | \
+	sed 's:^Would[[:space:]][[:space:]]*remove[[:space:]][[:space:]]*::' | \
+	grep -v tools/unity | \
+	xargs rm -rf
+
+show-garbage:
+	@git clean -n -f -d -x | \
+	sed 's:^Would[[:space:]][[:space:]]*remove[[:space:]][[:space:]]*::' | \
+	grep -v tools/unity

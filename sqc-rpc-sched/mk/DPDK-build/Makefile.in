@@ -1,0 +1,24 @@
+builddir	= @builddir@
+srcdir	=   @srcdir@
+VPATH	=   @srcdir@
+MKRULES_BUILDDIR      = @MKRULES_BUILDDIR@
+
+include $(MKRULES_BUILDDIR)/vars.mk
+
+ifneq ($(DPDK_DIR),)
+all::	$(MKRULES_BUILDDIR)/dpdk.mk
+$(MKRULES_BUILDDIR)/dpdk.mk:	Makefile.dpdk $(MKRULES_SRCDIR)/mkdpdkflags.sh
+	rm -f $@
+	$(SHELL) $(MKRULES_SRCDIR)/mkdpdkflags.sh > $@
+else
+all::
+	@true
+endif
+
+include $(MKRULES_BUILDDIR)/rules.mk
+
+clean::
+	@true
+
+distclean::
+	rm -rf Makefile Makefile.dpdk $(MKRULES_BUILDDIR)/dpdk.mk

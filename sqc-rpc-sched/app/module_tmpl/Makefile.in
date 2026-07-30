@@ -1,0 +1,19 @@
+builddir	= @builddir@
+srcdir	=   @srcdir@
+VPATH	=   @srcdir@
+MKRULES_BUILDDIR	=	@MKRULES_BUILDDIR@
+
+TARGET_LIB              = $(APP_MODTMPL_LIB)
+INSTALL_LIB_TARGETS     = $(TARGET_LIB)
+INSTALL_LIB_DIR         = $(DEST_LIBDIR)
+
+TARGETS                 = $(TARGET_LIB)
+
+include $(MKRULES_BUILDDIR)/vars.mk
+
+CPPFLAGS	+=	-I$(APP_INC_BUILDDIR)
+CPPFLAGS	+=	-I$(APP_INC_SRCDIR)
+
+SRCS		=	tmpl.c
+
+include $(MKRULES_BUILDDIR)/rules.mk

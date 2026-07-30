@@ -1,0 +1,36 @@
+#!/bin/bash
+
+set -euo pipefail
+
+SIMPLE_SQC_INSTALL_PREFIX="@CMAKE_INSTALL_PREFIX@"
+
+APP_PATH="$SIMPLE_SQC_INSTALL_PREFIX/bin/simple_sqc_server"
+LOG_FILE="$SIMPLE_SQC_INSTALL_PREFIX/var/simple_sqc_server.log"
+CONFIG_DIR="$SIMPLE_SQC_INSTALL_PREFIX/etc"
+# specifies a path to the directory where result and error files are placed.
+SPOOL_DIR="$SIMPLE_SQC_INSTALL_PREFIX/var/qiskit_server"
+
+export PYTHONPATH="$SIMPLE_SQC_INSTALL_PREFIX/lib/python${PYTHONPATH:+:$PYTHONPATH}"
+
+if [ "$#" -ne 1 ]; then
+    echo "Usage: $0 <host:port>"
+    exit 1
+fi
+
+HOST_PORT="$1"
+
+if [ ! -x "$APP_PATH" ]; then
+    echo "Failed to run the application: $APP_PATH" >&2
+    exit 1
+fi
+
+echo "Starting simple_sqc_server..."
+echo "Log File        : $LOG_FILE"
+echo "Config Directory: $CONFIG_DIR"
+echo "Spool Directory : $SPOOL_DIR"
+echo "Host:Port       : $HOST_PORT"
+"$APP_PATH" \
+    --conf-dir="$CONFIG_DIR" \
+    --spool-dir="$SPOOL_DIR" \
+    "$HOST_PORT" 2>&1 | tee -a "$LOG_FILE"
+

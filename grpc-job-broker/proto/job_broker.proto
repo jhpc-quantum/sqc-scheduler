@@ -1,0 +1,195 @@
+syntax = "proto3";
+
+//
+// Enumerated types.
+//
+enum user_role_t {
+  USER_ROLE_TYPE_UNKNOWN = 0;
+  USER_ROLE_TYPE_GENERAL = 1;
+  USER_ROLE_TYPE_ADMIN = 2;
+}
+
+enum user_status_t {
+  USER_STATUS_UNKNOWN = 0;
+  USER_STATUS_DISABLED = 1;
+  USER_STATUS_ENABLED = 2;
+}
+
+enum circuit_fmt_t {
+  CIRCUIT_FMT_UNKNOWN = 0;
+  CIRCUIT_FMT_QASM = 1;
+  CIRCUIT_FMT_QIR = 2;
+  CIRCUIT_FMT_QPY = 3;
+  CIRCUIT_FMT_JSON = 4;
+}
+
+enum qc_type_t {
+  QC_TYPE_UNKNOWN = 0;
+  QC_TYPE_RQC_REST = 1;
+  QC_TYPE_IBM_REST = 2;
+  QC_TYPE_SLURM_REST = 3;
+  QC_TYPE_QTM_GRPC = 4;
+  QC_TYPE_QTM_SIM_GRPC = 5;
+  QC_TYPE_IBM_DACC = 6;
+  QC_TYPE_A_OQTOPUSREST_SYSTEM_TOKEN = 7;
+  QC_TYPE_A_OQTOPUSREST_USER_TOKEN = 8;
+  QC_TYPE_A_OQTOPUSREST_BOTH_TOKEN = 9;
+  QC_TYPE_DUMMY = 99999;
+}
+
+enum transpiler_t {
+  TRANSPILER_UNKNOWN = 0;
+  TRANSPILER_NONE = 1;
+  TRANSPILER_PASS = 2;
+  TRANSPILER_NORMAL = 3;
+}
+
+enum job_status_t {
+  JOB_STATUS_UNKNOWN = 0;
+  JOB_STATUS_CREATED = 1;
+  JOB_STATUS_QUEUED = 2;
+  JOB_STATUS_RUNNING = 3;
+  JOB_STATUS_DONE = 4;
+  JOB_STATUS_CANCELLED = 5;
+  JOB_STATUS_ERROR = 6;
+  JOB_STATUS_DELETED = 7;
+}
+
+//
+// SUBMIT_JOB request and reply messages.
+//
+message submit_job_request {
+  bytes token = 1;
+  uint32 priority = 2;
+  bytes qprogram = 3;
+  circuit_fmt_t circuit_fmt = 4;
+  uint64 shots = 5;
+  qc_type_t qc_type = 6;
+  transpiler_t transpiler = 7;
+  bytes remark = 8;
+  optional bytes user_token = 9;
+}
+
+message submit_job_reply {
+  int64 code = 1;
+  bytes message = 2;
+  optional bytes job_id = 3;
+}
+
+//
+// JOB_STATUS request and reply messages.
+//
+message job_status_request {
+  bytes token = 1;
+  bytes job_id = 2;
+}
+
+message job_status_reply {
+  int64 code = 1;
+  bytes message = 2;
+  job_status_t status = 3;
+  optional bytes qc_job_id = 4;
+  optional bytes result = 5;
+}
+
+//
+// CANCEL_JOB request and reply messages.
+//
+message cancel_job_request {
+  bytes token = 1;
+  bytes job_id = 2;
+}
+
+message cancel_job_reply {
+  int64 code = 1;
+  bytes message = 2;
+}
+
+//
+// DELETE_JOB request and reply messages.
+//
+message delete_job_request {
+  bytes token = 1;
+  bytes job_id = 2;
+}
+
+message delete_job_reply {
+  int64 code = 1;
+  bytes message = 2;
+}
+
+//
+// JOB_LIST request and reply messages.
+//
+message job_list_request {
+  bytes token = 1;
+}
+
+message job_info {
+  bytes job_id = 1;
+  job_status_t status = 2;
+  optional bytes qc_job_id = 3;
+  optional bytes result = 4;
+}
+
+message job_list_reply {
+  int64 code = 1;
+  bytes message = 2;
+  repeated job_info jobs = 3;
+}
+
+//
+// ADM_DEL_JOBS request and reply messages.
+//
+message adm_del_jobs_request {
+  bytes token = 1;
+  bytes user_id = 2;
+  int64 from_time = 3;
+  int64 to_time = 4;
+}
+
+message adm_del_jobs_reply {
+  int64 code = 1;
+  bytes message = 2;
+}
+
+//
+// ADM_ADD_USER request and reply messages.
+//
+message adm_add_user_request {
+  bytes token = 1;
+  bytes user_id = 2;
+}
+
+message adm_add_user_reply {
+  int64 code = 1;
+  bytes message = 2;
+}
+
+//
+// ADM_SET_USER_STATUS request and reply messages.
+//
+message adm_set_user_status_request {
+  bytes token = 1;
+  bytes user_id = 2;
+  bool enabled = 3;
+}
+
+message adm_set_user_status_reply {
+  int64 code = 1;
+  bytes message = 2;
+}
+
+//
+// gRPC commands.
+//
+service job_broker {
+  rpc submit_job(submit_job_request) returns (submit_job_reply) {}
+  rpc job_status(job_status_request) returns (job_status_reply) {}
+  rpc cancel_job(cancel_job_request) returns (cancel_job_reply) {}
+  rpc delete_job(delete_job_request) returns (delete_job_reply) {}
+  rpc job_list(job_list_request) returns (job_list_reply) {}
+  rpc adm_del_jobs(adm_del_jobs_request) returns (adm_del_jobs_reply) {}
+  rpc adm_add_user(adm_add_user_request) returns (adm_add_user_reply) {}
+  rpc adm_set_user_status(adm_set_user_status_request) returns (adm_set_user_status_reply) {}
+}

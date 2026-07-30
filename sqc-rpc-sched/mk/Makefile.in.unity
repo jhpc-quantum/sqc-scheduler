@@ -1,0 +1,29 @@
+builddir	= @abs_builddir@
+srcdir	=   @srcdir@
+VPATH	=   @srcdir@
+MKRULES_BUILDDIR	= @MKRULES_BUILDDIR@
+
+SRCS	= unity.c
+TARGET_LIB = libunity.la
+
+DOBUILD	?=	$(shell ls $(SRCS) 2>/dev/null)
+
+ifdef DOBUILD
+
+all:: $(TARGET_LIB)
+
+include $(MKRULES_BUILDDIR)/vars.mk
+include $(MKRULES_BUILDDIR)/rules.mk
+
+clean::
+	$(LTCLEAN) -f $(TARGET_LIB) $(OBJS)
+	$(LTCLEAN) -rf .libs
+
+else
+
+all::
+	@true
+
+endif
+
+

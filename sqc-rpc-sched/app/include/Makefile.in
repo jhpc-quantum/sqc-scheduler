@@ -1,0 +1,18 @@
+builddir	= @builddir@
+srcdir	=   @srcdir@
+
+VPATH	=   @srcdir@
+MKRULES_BUILDDIR	=	@MKRULES_BUILDDIR@
+
+include $(MKRULES_BUILDDIR)/vars.mk
+include $(MKRULES_BUILDDIR)/rules.mk
+
+generate::
+	$(LN_S) $(APP_RPC_BUILDDIR)/rpc.pb-c.h rpc.pb-c.h
+	sed -e 's|[@]APP_SYSCONFDIR[@]|$(APP_SYSCONFDIR)|' \
+		-e 's|[@]APP_VARDIR[@]|$(APP_VARDIR)|' \
+		$(srcdir)/sqc_rpc_sched_paths.h.in > sqc_rpc_sched_paths.h
+
+clean::
+	$(RM) rpc.pb-c.h
+	$(RM) sqc_rpc_sched_paths.h

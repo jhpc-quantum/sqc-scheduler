@@ -1,0 +1,19 @@
+builddir	= @builddir@
+srcdir	=   @srcdir@
+VPATH	=   @srcdir@
+MKRULES_BUILDDIR	=	@MKRULES_BUILDDIR@
+
+TARGET_LIB_CXX          = $(APP_SQC_RPC_COMMON_LIB)
+INSTALL_LIB_TARGETS     = $(TARGET_LIB_CXX)
+INSTALL_LIB_DIR         = $(DEST_LIBDIR)
+
+TARGETS					= $(TARGET_LIB_CXX)
+
+SRCS					= sqc_rpc_sched_conv_enums.c sqc_rpc_sched_conf.c
+
+include $(MKRULES_BUILDDIR)/vars.mk
+
+CPPFLAGS		+=		-I$(APP_INC_BUILDDIR)
+CPPFLAGS		+=		-I$(APP_INC_SRCDIR)
+
+include $(MKRULES_BUILDDIR)/rules.mk

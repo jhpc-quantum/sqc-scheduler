@@ -1,0 +1,24 @@
+#!/bin/sh
+
+# Consider to use -p ?
+#	It makes (char *)&((*aptr)->a) to (char *) & ((*aptr)->a), though.
+
+beautify() {
+    astyle \
+	--mode=c \
+	--style=google \
+	-xC78 -s2 -m0 \
+	-L -S -H \
+	-xL -w -j \
+	-k3 \
+	-z2 \
+	-n \
+	${1+"$@"}
+    #-O -o
+}
+
+
+beautify ${1+"$@"}
+exit 0
+
+

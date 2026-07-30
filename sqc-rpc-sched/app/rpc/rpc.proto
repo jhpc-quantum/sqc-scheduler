@@ -1,0 +1,179 @@
+syntax = "proto2";
+
+//
+// Enumerated types.
+//
+enum user_role_t {
+  USER_ROLE_TYPE_UNKNOWN = 0;
+  USER_ROLE_TYPE_GENERAL = 1;
+  USER_ROLE_TYPE_ADMIN = 2;
+}
+
+enum user_status_t {
+  USER_STATUS_UNKNOWN = 0;
+  USER_STATUS_DISABLED = 1;
+  USER_STATUS_ENABLED = 2;
+}
+
+enum circuit_fmt_t {
+  CIRCUIT_FMT_UNKNOWN = 0;
+  CIRCUIT_FMT_QASM = 1;
+  CIRCUIT_FMT_QIR = 2;
+  CIRCUIT_FMT_QPY = 3;
+}
+
+enum qc_type_t {
+  QC_TYPE_UNKNOWN = 0;
+  QC_TYPE_RQC = 1;
+  QC_TYPE_IBM_REST = 2;
+  QC_TYPE_SLURM_REST = 3;
+  QC_TYPE_REIMEI_REST = 4;
+  QC_TYPE_REIMEI_SIMULATOR_REST = 5;
+  QC_TYPE_IBM_DIRECT_ACCESS_API = 6;
+  QC_TYPE_DUMMY = 99999;
+}
+
+enum transpiler_t {
+  TRANSPILER_UNKNOWN = 0;
+  TRANSPILER_NONE = 1;
+  TRANSPILER_PASS = 2;
+  TRANSPILER_NORMAL = 3;
+}
+
+enum job_status_t {
+  JOB_STATUS_UNKNOWN = 0;
+  JOB_STATUS_CREATED = 1;
+  JOB_STATUS_QUEUED = 2;
+  JOB_STATUS_RUNNING = 3;
+  JOB_STATUS_DONE = 4;
+  JOB_STATUS_CANCELLED = 5;
+  JOB_STATUS_ERROR = 6;
+  JOB_STATUS_DELETED = 7;
+}
+
+enum auth_method_t {
+  AUTH_METHOD_UNKNOWN = 0;
+  AUTH_METHOD_NONE = 1;
+  AUTH_METHOD_MUTUAL_TLS = 2;
+  AUTH_METHOD_MUNGE = 3;
+  AUTH_METHOD_JWT = 4;
+}
+
+//
+// SUBMIT_JOB request and reply messages.
+//
+message submit_job_request {
+  required uint32 priority = 1;
+  required bytes qprogram = 2;
+  required circuit_fmt_t circuit_fmt = 3;
+  required uint64 shots = 4;
+  required qc_type_t qc_type = 5;
+  required transpiler_t transpiler = 6;
+  required bytes remark = 7;
+  optional bytes user_token = 8;
+}
+
+message submit_job_reply {
+  required int64 code = 1;
+  required bytes message = 2;
+  optional bytes job_id = 3;
+}
+
+//
+// JOB_STATUS request and reply messages.
+//
+message job_status_request {
+  required bytes job_id = 1;
+}
+
+message job_status_reply {
+  required int64 code = 1;
+  required bytes message = 2;
+  required job_status_t status = 3;
+  optional bytes qc_job_id = 4;
+  optional bytes result = 5;
+}
+
+//
+// OPEN_NEW_SESSION request.
+// Its reply is 'basic_reply'.
+//
+message open_new_session_request {
+  required auth_method_t auth_method = 1;
+}
+
+//
+// AUTH request.
+// Its reply is 'basic_reply'.
+//
+message auth_request {
+  required bytes data = 1;
+}
+
+//
+// CANCEL_JOB request.
+// Its reply is 'basic_reply'.
+//
+message cancel_job_request {
+  required bytes job_id = 1;
+};
+
+//
+// DELETE_JOB request.
+// Its reply is 'basic_reply'.
+//
+message delete_job_request {
+  required bytes job_id = 1;
+};
+
+//
+// JOB_LIST reply.
+// Its request has no RPC body.
+//
+message job_info {
+  required bytes job_id = 1;
+  required job_status_t status = 2;
+  optional bytes qc_job_id = 3;
+  optional bytes result = 4;
+}
+
+message job_list_reply {
+  required int64 code = 1;
+  required bytes message = 2;
+  repeated job_info jobs = 3;
+}
+
+//
+// ADM_DEL_JOBS request.
+// Its reply is 'basic_reply'.
+//
+message adm_del_jobs_request {
+  required bytes user_id = 1;
+  required int64 from_time = 2;
+  required int64 to_time = 3;
+};
+
+//
+// ADM_ADD_USER request.
+// Its reply is 'basic_reply'.
+//
+message adm_add_user_request {
+  required bytes user_id = 1;
+};
+
+//
+// ADM_SET_USER_STATUS request.
+// Its reply is 'basic_reply'.
+//
+message adm_set_user_status_request {
+  required bytes user_id = 1;
+  required bool enabled = 2;
+};
+
+//
+// Common reply message for RPC requests.
+//
+message basic_reply {
+  required int64 code = 1;
+  required bytes message = 2;
+}
