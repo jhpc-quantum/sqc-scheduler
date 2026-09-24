@@ -21284,7 +21284,7 @@ fi
 
 
 # emit.
-ac_config_files="$ac_config_files mk/vars.mk mk/DPDK-build/Makefile.dpdk mk/DPDK-build/Makefile mk/doxygen.conf Makefile framework/include/Makefile framework/include/sqc_platform.h framework/lib/Makefile framework/lib/test/Makefile framework/lib/check/Makefile app/Makefile app/include/Makefile app/sqc_rpc_common/Makefile app/sqc_rpc_sched/Makefile app/module_tmpl/Makefile app/dbmgr/Makefile app/dbmgr/test/Makefile app/grpc_broker/Makefile app/grpc_broker/test/Makefile app/req_invoker/Makefile app/req_invoker/test/Makefile app/req_sched/Makefile app/rpc/Makefile app/rpc/test_jwt/Makefile app/rpc/test_munge/Makefile app/srv_session/Makefile app/srv_session/test/Makefile app/sqc_rpc_client/Makefile app/sqc_rpc_perf_client/Makefile tools/Makefile"
+ac_config_files="$ac_config_files mk/vars.mk mk/DPDK-build/Makefile.dpdk mk/DPDK-build/Makefile mk/doxygen.conf Makefile framework/include/Makefile framework/include/sqc_platform.h framework/lib/Makefile framework/lib/test/Makefile framework/lib/check/Makefile app/Makefile app/include/Makefile app/sqc_rpc_common/Makefile app/sqc_rpc_sched/Makefile app/module_tmpl/Makefile app/dbmgr/Makefile app/dbmgr/test/Makefile app/grpc_broker/Makefile app/grpc_broker/test/Makefile app/req_invoker/Makefile app/req_invoker/test/Makefile app/job_sched/Makefile app/job_sched/test/Makefile app/rpc/Makefile app/rpc/test_jwt/Makefile app/rpc/test_munge/Makefile app/srv_session/Makefile app/srv_session/test/Makefile app/sqc_rpc_client/Makefile app/sqc_rpc_perf_client/Makefile tools/Makefile"
 
 
 ac_config_links="$ac_config_links mk/rules.mk:mk/rules.mk mk/unit-test.mk:mk/unit-test.mk"
@@ -22417,7 +22417,8 @@ do
     "app/grpc_broker/test/Makefile") CONFIG_FILES="$CONFIG_FILES app/grpc_broker/test/Makefile" ;;
     "app/req_invoker/Makefile") CONFIG_FILES="$CONFIG_FILES app/req_invoker/Makefile" ;;
     "app/req_invoker/test/Makefile") CONFIG_FILES="$CONFIG_FILES app/req_invoker/test/Makefile" ;;
-    "app/req_sched/Makefile") CONFIG_FILES="$CONFIG_FILES app/req_sched/Makefile" ;;
+    "app/job_sched/Makefile") CONFIG_FILES="$CONFIG_FILES app/job_sched/Makefile" ;;
+    "app/job_sched/test/Makefile") CONFIG_FILES="$CONFIG_FILES app/job_sched/test/Makefile" ;;
     "app/rpc/Makefile") CONFIG_FILES="$CONFIG_FILES app/rpc/Makefile" ;;
     "app/rpc/test_jwt/Makefile") CONFIG_FILES="$CONFIG_FILES app/rpc/test_jwt/Makefile" ;;
     "app/rpc/test_munge/Makefile") CONFIG_FILES="$CONFIG_FILES app/rpc/test_munge/Makefile" ;;

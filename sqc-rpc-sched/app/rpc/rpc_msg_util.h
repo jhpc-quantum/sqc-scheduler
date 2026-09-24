@@ -383,6 +383,7 @@ rpc_unpack_auth_reply(char *body, size_t len, sqc_result_t *code, char **msg);
 /// @param[in]     transpiler   Transpiler of the job.
 /// @param[in]     remark       Remark comment of the job.
 /// @param[in]     user_token   User token of the job.
+/// @param[in]     group_id     Group ID.
 /// @param[out]    body         The message body.
 /// @param[out]    len          Length of \c body.
 ///
@@ -403,7 +404,7 @@ sqc_result_t
 rpc_pack_submit_job_request(uint8_t priority, const char *qprogram, sqc_rpc_sched_circuit_fmt_t circuit_fmt,
                             size_t shots, sqc_rpc_sched_qc_type_t qc_type,
                             sqc_rpc_sched_transpiler_t transpiler,
-                            const char *remark, const char *user_token,
+                            const char *remark, const char *user_token, const char *group_id,
                             char **body, size_t *len);
 
 ///
@@ -950,5 +951,153 @@ rpc_pack_adm_set_user_status_reply(sqc_result_t code, const char *msg, char **bo
 sqc_result_t
 rpc_unpack_adm_set_user_status_reply(char *body, size_t len, sqc_result_t *code, char **msg);
 
+///
+/// @brief   Pack message body of ADM_SET_GROUP_EXEC_TIME_LIMIT_REQUEST.
+///
+/// @param[in]     group_id            Group ID.
+/// @param[in]     exec_time_limit     Maximum execution time.
+/// @param[out]    body                The message body.
+/// @param[out]    len                 Length of \c body.
+///
+/// @retval SQC_RESULT_OK              Succeeded.
+/// @retval SQC_RESULT_NO_MEMORY       Failed, no memory.
+/// @retval SQC_RESULT_INVALID_ARGS    Failed, invalid arguments.
+/// @retval SQC_RESULT_ANY_FAILURES    Failed, any other reason.
+///
+/// @details The function <tt>rpc_pack_adm_set_group_exec_time_limit_request()</tt> builds message body of
+/// an RPC message \c ADM_SET_GROUP_EXEC_TIME_LIMIT_REQUEST.
+/// \c job_id must be a NUL-terminated text.
+///
+/// If the function returns \c SQC_RESULT_OK, it sets \c body and \c len.
+/// \c job_id is a NUL-terminated string.
+/// The caller needs to free it.
+///
+sqc_result_t
+rpc_pack_adm_set_group_exec_time_limit_request(const char *group_id,
+                                               uint64_t exec_time_limit,
+                                               char **body, size_t *len);
+
+///
+/// @brief   Pack message body of ADM_SET_GROUP_EXEC_TIME_LIMIT_REPLY.
+///
+/// @param[in]     code         The result code of the request.
+/// @param[in]     msg          The result message.
+/// @param[out]    body         The message body.
+/// @param[out]    len          Length of \c body.
+///
+/// @retval SQC_RESULT_OK               Succeeded.
+/// @retval SQC_RESULT_NO_MEMORY        Failed, no memory.
+/// @retval SQC_RESULT_INVALID_ARGS     Failed, invalid arguments.
+/// @retval SQC_RESULT_ANY_FAILURES     Failed, any other reason.
+///
+/// @details The function <tt>rpc_pack_adm_set_group_exec_time_limit_reply()</tt> builds message body of
+/// an RPC message \c ADM_SET_GROUP_EXEC_TIME_LIMIT_REPLY.
+/// \c msg must be a NUL-terminated text or NULL.
+/// In case of NULL, it is treated as an empty string.
+///
+/// If the function returns \c SQC_RESULT_OK, it sets \c body and \c len.
+/// The caller needs to free \c body.
+///
+sqc_result_t
+rpc_pack_adm_set_group_exec_time_limit_reply(sqc_result_t code, const char *msg,
+                                             char **body, size_t *len);
+
+///
+/// @brief   Unpack message body of ADM_SET_GROUP_EXEC_TIME_LIMIT_REPLY.
+///
+/// @param[in]     body         The message body.
+/// @param[in]     len          Length of \c body.
+/// @param[out]    code         The result code of the request.
+/// @param[out]    msg          The result message.
+///
+/// @retval SQC_RESULT_OK               Succeeded.
+/// @retval SQC_RESULT_NO_MEMORY        Failed, no memory.
+/// @retval SQC_RESULT_INVALID_ARGS     Failed, invalid arguments.
+/// @retval SQC_RESULT_ANY_FAILURES     Failed, any other reason.
+///
+/// @details The function <tt>rpc_unpack_adm_set_group_exec_time_limit_reply()</tt> extracts message body of
+/// an RPC message \c ADM_SET_GROUP_EXEC_TIME_LIMIT_REPLY.
+///
+/// If the function returns \c SQC_RESULT_OK, it sets \c code, \c msg and \c job_id.
+/// \c msg and \c job_id are NUL-terminated strings.
+/// The caller needs to free them.
+///
+sqc_result_t
+rpc_unpack_adm_set_group_exec_time_limit_reply(char *body, size_t len,
+                                               sqc_result_t *code, char **msg);
+
+///
+/// @brief   Pack message body of ADM_SET_USER_GROUP_STATUS_REQUEST.
+///
+/// @param[in]     user_id      User ID.
+/// @param[in]     group_id     Group ID.
+/// @param[in]     enabled      Activate (true) / Inactivate (false)
+/// @param[out]    body         The message body.
+/// @param[out]    len          Length of \c body.
+///
+/// @retval SQC_RESULT_OK              Succeeded.
+/// @retval SQC_RESULT_NO_MEMORY       Failed, no memory.
+/// @retval SQC_RESULT_INVALID_ARGS    Failed, invalid arguments.
+/// @retval SQC_RESULT_ANY_FAILURES    Failed, any other reason.
+///
+/// @details The function <tt>rpc_pack_adm_set_user_group_status_request()</tt> builds message body of
+/// an RPC message \c ADM_SET_USER_GROUP_STATUS_REQUEST.
+/// \c user_id and \c group_id must be NUL-terminated text.
+///
+/// If the function returns \c SQC_RESULT_OK, it sets \c body and \c len.
+/// The caller needs to free \c body.
+///
+sqc_result_t
+rpc_pack_adm_set_user_group_status_request(const char *user_id, const char *group_id, bool enabled,
+                                           char **body, size_t *len);
+
+///
+/// @brief   Pack message body of ADM_SET_USER_GROUP_STATUS_REPLY.
+///
+/// @param[in]     code         The result code of the request.
+/// @param[in]     msg          The result message.
+/// @param[out]    body         The message body.
+/// @param[out]    len          Length of \c body.
+///
+/// @retval SQC_RESULT_OK               Succeeded.
+/// @retval SQC_RESULT_NO_MEMORY        Failed, no memory.
+/// @retval SQC_RESULT_INVALID_ARGS     Failed, invalid arguments.
+/// @retval SQC_RESULT_ANY_FAILURES     Failed, any other reason.
+///
+/// @details The function <tt>rpc_pack_adm_set_user_group_status_reply()</tt> builds message body of
+/// an RPC message \c ADM_SET_USER_GROUP_STATUS_REPLY.
+/// \c msg must be a NUL-terminated text or NULL.
+/// In case of NULL, it is treated as an empty string.
+///
+/// If the function returns \c SQC_RESULT_OK, it sets \c body and \c len.
+/// The caller needs to free \c body.
+///
+sqc_result_t
+rpc_pack_adm_set_user_group_status_reply(sqc_result_t code, const char *msg,
+                                         char **body, size_t *len);
+
+///
+/// @brief   Unpack message body of ADM_SET_USER_GROUP_STATUS_REPLY.
+///
+/// @param[in]     body         The message body.
+/// @param[in]     len          Length of \c body.
+/// @param[out]    code         The result code of the request.
+/// @param[out]    msg          The result message.
+///
+/// @retval SQC_RESULT_OK               Succeeded.
+/// @retval SQC_RESULT_NO_MEMORY        Failed, no memory.
+/// @retval SQC_RESULT_INVALID_ARGS     Failed, invalid arguments.
+/// @retval SQC_RESULT_ANY_FAILURES     Failed, any other reason.
+///
+/// @details The function <tt>rpc_unpack_adm_set_user_group_status_reply()</tt> extracts message body of
+/// an RPC message \c ADM_SET_USER_GROUP_STATUS_REPLY.
+///
+/// If the function returns \c SQC_RESULT_OK, it sets \c code and \c msg.
+/// \c msg is a NUL-terminated string.
+/// The caller needs to free it.
+///
+sqc_result_t
+rpc_unpack_adm_set_user_group_status_reply(char *body, size_t len,
+                                           sqc_result_t *code, char **msg);
 
 __END_DECLS

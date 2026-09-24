@@ -24,6 +24,9 @@ bool
 parse_uint32(const char *arg, uint32_t *value);
 
 bool
+parse_uint64(const char *arg, uint64_t *value);
+
+bool
 parse_size_t(const char *arg, size_t *value);
 
 bool
@@ -42,7 +45,8 @@ print_common_options(void);
 sqc_result_t
 rpc_submit_job(rpc_session_client_t *session, uint8_t priority, const char *qprogram,
                sqc_rpc_sched_circuit_fmt_t circuit_fmt, size_t shots, sqc_rpc_sched_qc_type_t qc_type,
-               sqc_rpc_sched_transpiler_t transpiler, const char *remark, const char *user_token,
+               sqc_rpc_sched_transpiler_t transpiler, const char *remark,
+               const char *user_token, const char *group_id,
                char **job_id);
 
 sqc_result_t
@@ -81,3 +85,9 @@ subcmd_adm_add_user_main(int argc, char *argv[], int arg_index);
 
 sqc_result_t
 subcmd_adm_set_user_status_main(int argc, char *argv[], int arg_index);
+
+sqc_result_t
+subcmd_adm_set_group_exec_time_limit_main(int argc, char *argv[], int arg_index);
+
+sqc_result_t
+subcmd_adm_set_user_group_status_main(int argc, char *argv[], int arg_index);

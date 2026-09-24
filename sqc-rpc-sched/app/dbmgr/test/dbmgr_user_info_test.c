@@ -2,21 +2,26 @@
 
 #include "unity.h"
 
+#include "dbmgr_util.c"
 #include "dbmgr_db.c"
 #include "dbmgr_user_info.c"
 
 #include "dbmgr_db_common.c"
 
 void setUp(void) {
-  remove_db_files("setUp");
-  create_db_files("setUp");
+  remove_db_files("setUp - user_info");
+  create_db_files("setUp - user_info");
 }
 
 void tearDown(void) {
-  remove_db_files("tearDown");
+  remove_db_files("tearDown - user_info");
 }
 
-void test_user_info_initialize_finalize(void) {
+/*
+ * Positive test cases for private methods
+ */
+
+void test_s_dbmgr_user_info_initialize_finalize(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
 
   // initialize
@@ -40,7 +45,7 @@ void test_user_info_initialize_finalize(void) {
   }
 }
 
-void test_user_info_free_in_finalize(void) {
+void test_s_dbmgr_user_info_record_freeup(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
   dbmgr_user_info_t ui_ptr = NULL;
@@ -73,7 +78,7 @@ void test_user_info_free_in_finalize(void) {
   TEST_ASSERT_NULL(sqc_rpc_sched_db);
 }
 
-void test_user_info_record_create_destroy(void) {
+void test_s_dbmgr_user_info_record_create_destroy(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
   const size_t user_id_len = strlen(user_id);
@@ -94,7 +99,7 @@ void test_user_info_record_create_destroy(void) {
   }
 }
 
-void test_user_info_record_add_delete(void) {
+void test_s_dbmgr_user_info_record_add_delete(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
   dbmgr_user_info_t ui_ptr = NULL;
@@ -138,7 +143,11 @@ void test_user_info_record_add_delete(void) {
   TEST_ASSERT_NULL(sqc_rpc_sched_db);
 }
 
-void test_ui_user_create_delete(void) {
+/*
+ * Positive test cases for public methods
+ */
+
+void test_dbmgr_ui_create_delete_user(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
   dbmgr_user_info_t ui_ptr = NULL;
@@ -183,7 +192,7 @@ void test_ui_user_create_delete(void) {
   TEST_ASSERT_NULL(sqc_rpc_sched_db);
 }
 
-void test_ui_user_exists(void) {
+void test_dbmgr_ui_user_exists(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
   dbmgr_user_info_t ui_ptr = NULL;
@@ -223,7 +232,7 @@ void test_ui_user_exists(void) {
   TEST_ASSERT_NULL(sqc_rpc_sched_db);
 }
 
-void test_ui_user_find(void) {
+void test_dbmgr_ui_user_find(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
   dbmgr_user_info_t ui_ptr = NULL;
@@ -274,7 +283,7 @@ void test_ui_user_find(void) {
   TEST_ASSERT_NULL(sqc_rpc_sched_db);
 }
 
-void test_ui_set_get_user_id(void) {
+void test_dbmgr_ui_set_get_user_id(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
   const size_t user_id_len = strlen(user_id);
@@ -346,7 +355,7 @@ void test_ui_set_get_user_id(void) {
   TEST_ASSERT_NULL(sqc_rpc_sched_db);
 }
 
-void test_ui_set_get_user_role_type(void) {
+void test_dbmgr_ui_set_get_user_role_type(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
   const sqc_rpc_sched_user_role_type_t new_role_type = SQC_RPC_SCHED_USER_ROLE_TYPE_ADMIN;
@@ -400,7 +409,7 @@ void test_ui_set_get_user_role_type(void) {
   TEST_ASSERT_NULL(sqc_rpc_sched_db);
 }
 
-void test_ui_is_user_admin(void) {
+void test_dbmgr_ui_is_user_admin(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
   dbmgr_user_info_t ui_ptr = NULL;
@@ -439,7 +448,7 @@ void test_ui_is_user_admin(void) {
   TEST_ASSERT_NULL(sqc_rpc_sched_db);
 }
 
-void test_ui_set_get_user_status(void) {
+void test_dbmgr_ui_set_user_enabled_disabled(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
   dbmgr_user_info_t ui_ptr = NULL;
@@ -494,7 +503,7 @@ void test_ui_set_get_user_status(void) {
   TEST_ASSERT_NULL(sqc_rpc_sched_db);
 }
 
-void test_ui_get_created_time(void) {
+void test_dbmgr_ui_get_created_time(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
   dbmgr_user_info_t ui_ptr = NULL;
@@ -537,7 +546,7 @@ void test_ui_get_created_time(void) {
   TEST_ASSERT_NULL(sqc_rpc_sched_db);
 }
 
-void test_ui_get_update_time(void) {
+void test_dbmgr_ui_get_update_time(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
   dbmgr_user_info_t ui_ptr = NULL;
@@ -582,10 +591,10 @@ void test_ui_get_update_time(void) {
 
 
 /*
- * Negative testing
+ * Negative test cases for private methods
  */
 
-void test_user_info_record_create_negative(void) {
+void test_negative_s_dbmgr_user_info_record_create(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
   const char *excess_user_id = "01234567890123456789012345678901234567890123456789" \
@@ -618,11 +627,11 @@ void test_user_info_record_create_negative(void) {
   }
 }
 
-void test_user_info_record_destroy_negative(void) {
+void test_negative_s_dbmgr_user_info_record_destroy(void) {
   s_dbmgr_user_info_record_destroy(NULL);
 }
 
-void test_user_info_record_add_negative(void) {
+void test_negative_s_dbmgr_user_info_record_add(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
   dbmgr_user_info_t ui_ptr = NULL;
@@ -651,7 +660,7 @@ void test_user_info_record_add_negative(void) {
 
   // invalid record
   {
-    rc = s_dbmgr_user_info_record_delete(NULL);
+    rc = s_dbmgr_user_info_record_add(NULL);
     TEST_ASSERT_EQUAL(SQC_RESULT_INVALID_ARGS, rc);
   }
 
@@ -668,7 +677,7 @@ void test_user_info_record_add_negative(void) {
   TEST_ASSERT_NULL(sqc_rpc_sched_db);
 }
 
-void test_user_info_record_delete_negative(void) {
+void test_negative_s_dbmgr_user_info_record_delete(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
   dbmgr_user_info_t ui_ptr = NULL;
@@ -714,73 +723,11 @@ void test_user_info_record_delete_negative(void) {
   TEST_ASSERT_NULL(sqc_rpc_sched_db);
 }
 
-void test_user_info_record_find_negative(void) {
-  sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
-  const char *user_id = "test-user";
-  dbmgr_user_info_t ui_ptr = NULL;
-  dbmgr_user_info_t actual_ui_ptr = NULL;
+/*
+ * Negative test cases for public methods
+ */
 
-  // create record
-  {
-    rc = s_dbmgr_user_info_record_create(user_id, &ui_ptr);
-    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
-  }
-
-  // not started
-  {
-    rc = s_dbmgr_user_info_record_find(user_id, &actual_ui_ptr);
-    TEST_ASSERT_EQUAL(SQC_RESULT_NOT_STARTED, rc);
-    TEST_ASSERT_NULL(actual_ui_ptr);
-  }
-
-  // initialize
-  {
-    rc = s_dbmgr_db_initialize(SQC_RPC_SCHED_UT_DB_FILE);
-    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
-    TEST_ASSERT_NOT_NULL(sqc_rpc_sched_db);
-
-    rc = s_dbmgr_user_info_initialize();
-    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
-  }
-
-  // non-existent user_id
-  {
-    rc = s_dbmgr_user_info_record_find("non-existent-user", &actual_ui_ptr);
-    TEST_ASSERT_EQUAL(SQC_RESULT_NOT_FOUND, rc);
-    TEST_ASSERT_NULL(actual_ui_ptr);
-  }
-
-  // invalid user_id
-  {
-    rc = s_dbmgr_user_info_record_find("", &actual_ui_ptr);
-    TEST_ASSERT_EQUAL(SQC_RESULT_INVALID_ARGS, rc);
-    TEST_ASSERT_NULL(actual_ui_ptr);
-
-    rc = s_dbmgr_user_info_record_find(NULL, &actual_ui_ptr);
-    TEST_ASSERT_EQUAL(SQC_RESULT_INVALID_ARGS, rc);
-    TEST_ASSERT_NULL(actual_ui_ptr);
-  }
-
-  // invalid record
-  {
-    rc = s_dbmgr_user_info_record_find(user_id, NULL);
-    TEST_ASSERT_EQUAL(SQC_RESULT_INVALID_ARGS, rc);
-  }
-
-  // destroy record
-  {
-    s_dbmgr_user_info_record_destroy(ui_ptr);
-    ui_ptr = NULL;
-  }
-
-  // finalize
-  s_dbmgr_user_info_finalize();
-
-  s_dbmgr_db_finalize();
-  TEST_ASSERT_NULL(sqc_rpc_sched_db);
-}
-
-void test_ui_create_user_negative(void) {
+void test_negative_dbmgr_ui_create_user(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
   dbmgr_user_info_t ui_ptr = NULL;
@@ -803,7 +750,7 @@ void test_ui_create_user_negative(void) {
   }
 }
 
-void test_ui_delete_user_negative(void) {
+void test_negative_dbmgr_ui_delete_user(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
 
@@ -839,7 +786,7 @@ void test_ui_delete_user_negative(void) {
   TEST_ASSERT_NULL(sqc_rpc_sched_db);
 }
 
-void test_ui_user_exists_negative(void) {
+void test_negative_dbmgr_ui_user_exists(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
 
@@ -872,11 +819,73 @@ void test_ui_user_exists_negative(void) {
   TEST_ASSERT_NULL(sqc_rpc_sched_db);
 }
 
-void test_ui_user_find_negative(void) {
-  // same as test_user_info_record_find_negative test
+void test_negative_dbmgr_ui_user_find(void) {
+  sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
+  const char *user_id = "test-user";
+  dbmgr_user_info_t ui_ptr = NULL;
+  dbmgr_user_info_t actual_ui_ptr = NULL;
+
+  // create record
+  {
+    rc = s_dbmgr_user_info_record_create(user_id, &ui_ptr);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+  }
+
+  // not started
+  {
+    rc = s_dbmgr_user_info_record_find(user_id, &actual_ui_ptr);
+    TEST_ASSERT_EQUAL(SQC_RESULT_NOT_STARTED, rc);
+    TEST_ASSERT_NULL(actual_ui_ptr);
+  }
+
+  // initialize
+  {
+    rc = s_dbmgr_db_initialize(SQC_RPC_SCHED_UT_DB_FILE);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+    TEST_ASSERT_NOT_NULL(sqc_rpc_sched_db);
+
+    rc = s_dbmgr_user_info_initialize();
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+  }
+
+  // non-existent user_id
+  {
+    rc = dbmgr_ui_user_find("non-existent-user", &actual_ui_ptr);
+    TEST_ASSERT_EQUAL(SQC_RESULT_NOT_FOUND, rc);
+    TEST_ASSERT_NULL(actual_ui_ptr);
+  }
+
+  // invalid user_id
+  {
+    rc = dbmgr_ui_user_find("", &actual_ui_ptr);
+    TEST_ASSERT_EQUAL(SQC_RESULT_INVALID_ARGS, rc);
+    TEST_ASSERT_NULL(actual_ui_ptr);
+
+    rc = dbmgr_ui_user_find(NULL, &actual_ui_ptr);
+    TEST_ASSERT_EQUAL(SQC_RESULT_INVALID_ARGS, rc);
+    TEST_ASSERT_NULL(actual_ui_ptr);
+  }
+
+  // invalid record
+  {
+    rc = dbmgr_ui_user_find(user_id, NULL);
+    TEST_ASSERT_EQUAL(SQC_RESULT_INVALID_ARGS, rc);
+  }
+
+  // destroy record
+  {
+    s_dbmgr_user_info_record_destroy(ui_ptr);
+    ui_ptr = NULL;
+  }
+
+  // finalize
+  s_dbmgr_user_info_finalize();
+
+  s_dbmgr_db_finalize();
+  TEST_ASSERT_NULL(sqc_rpc_sched_db);
 }
 
-void test_ui_set_user_id_negative(void) {
+void test_negative_dbmgr_ui_set_user_id(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
   const char *new_user_id = "new-test-user";
@@ -912,7 +921,7 @@ void test_ui_set_user_id_negative(void) {
   }
 }
 
-void test_ui_get_user_id_negative(void) {
+void test_negative_dbmgr_ui_get_user_id(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
   dbmgr_user_info_t ui_ptr = NULL;
@@ -943,7 +952,7 @@ void test_ui_get_user_id_negative(void) {
   }
 }
 
-void test_ui_get_user_id_len_negative(void) {
+void test_negative_dbmgr_ui_get_user_id_len(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
   dbmgr_user_info_t ui_ptr = NULL;
@@ -964,6 +973,218 @@ void test_ui_get_user_id_len_negative(void) {
   // invalid user_id
   {
     rc = dbmgr_ui_get_user_id_len(ui_ptr, NULL);
+    TEST_ASSERT_EQUAL(SQC_RESULT_INVALID_ARGS, rc);
+  }
+
+  // destroy record
+  {
+    s_dbmgr_user_info_record_destroy(ui_ptr);
+    ui_ptr = NULL;
+  }
+}
+
+void test_negative_dbmgr_ui_set_user_role_type(void) {
+  sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
+  const char *user_id = "test-user";
+  dbmgr_user_info_t ui_ptr = NULL;
+  sqc_rpc_sched_user_role_type_t role_type = SQC_RPC_SCHED_USER_ROLE_TYPE_ADMIN;
+
+  // create record
+  {
+    rc = s_dbmgr_user_info_record_create(user_id, &ui_ptr);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+  }
+
+  // invalid record
+  {
+    rc = dbmgr_ui_set_user_role_type(NULL, role_type);
+    TEST_ASSERT_EQUAL(SQC_RESULT_INVALID_ARGS, rc);
+  }
+
+  // destroy record
+  {
+    s_dbmgr_user_info_record_destroy(ui_ptr);
+    ui_ptr = NULL;
+  }
+}
+
+void test_negative_dbmgr_ui_get_user_role_type(void) {
+  sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
+  const char *user_id = "test-user";
+  dbmgr_user_info_t ui_ptr = NULL;
+  sqc_rpc_sched_user_role_type_t actual_role_type = SQC_RPC_SCHED_USER_ROLE_TYPE_UNKNOWN;
+
+  // create record
+  {
+    rc = s_dbmgr_user_info_record_create(user_id, &ui_ptr);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+  }
+
+  // invalid record
+  {
+    rc = dbmgr_ui_get_user_role_type(NULL, &actual_role_type);
+    TEST_ASSERT_EQUAL(SQC_RESULT_INVALID_ARGS, rc);
+  }
+
+  // invalid role_type
+  {
+    rc = dbmgr_ui_get_user_role_type(ui_ptr, NULL);
+    TEST_ASSERT_EQUAL(SQC_RESULT_INVALID_ARGS, rc);
+  }
+
+  // destroy record
+  {
+    s_dbmgr_user_info_record_destroy(ui_ptr);
+    ui_ptr = NULL;
+  }
+}
+
+void test_negative_dbmgr_ui_is_user_admin(void) {
+  sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
+  const char *user_id = "test-user";
+  dbmgr_user_info_t ui_ptr = NULL;
+
+  // create record
+  {
+    rc = s_dbmgr_user_info_record_create(user_id, &ui_ptr);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+  }
+
+  // invalid record
+  {
+    TEST_ASSERT_FALSE(dbmgr_ui_is_user_admin(NULL));
+  }
+
+  // destroy record
+  {
+    s_dbmgr_user_info_record_destroy(ui_ptr);
+    ui_ptr = NULL;
+  }
+}
+
+void test_negative_dbmgr_ui_set_user_enabled(void) {
+  sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
+  const char *user_id = "test-user";
+  dbmgr_user_info_t ui_ptr = NULL;
+
+  // create record
+  {
+    rc = s_dbmgr_user_info_record_create(user_id, &ui_ptr);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+  }
+
+  // invalid record
+  {
+    rc = dbmgr_ui_set_user_enabled(NULL);
+    TEST_ASSERT_EQUAL(SQC_RESULT_INVALID_ARGS, rc);
+  }
+
+  // destroy record
+  {
+    s_dbmgr_user_info_record_destroy(ui_ptr);
+    ui_ptr = NULL;
+  }
+}
+
+void test_negative_dbmgr_ui_set_user_disabled(void) {
+  sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
+  const char *user_id = "test-user";
+  dbmgr_user_info_t ui_ptr = NULL;
+
+  // create record
+  {
+    rc = s_dbmgr_user_info_record_create(user_id, &ui_ptr);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+  }
+
+  // invalid record
+  {
+    rc = dbmgr_ui_set_user_disabled(NULL);
+    TEST_ASSERT_EQUAL(SQC_RESULT_INVALID_ARGS, rc);
+  }
+
+  // destroy record
+  {
+    s_dbmgr_user_info_record_destroy(ui_ptr);
+    ui_ptr = NULL;
+  }
+}
+
+void test_negative_dbmgr_ui_is_user_enabled(void) {
+  sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
+  const char *user_id = "test-user";
+  dbmgr_user_info_t ui_ptr = NULL;
+
+  // create record
+  {
+    rc = s_dbmgr_user_info_record_create(user_id, &ui_ptr);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+  }
+
+  // invalid record
+  {
+    TEST_ASSERT_FALSE(dbmgr_ui_is_user_enabled(NULL));
+  }
+
+  // destroy record
+  {
+    s_dbmgr_user_info_record_destroy(ui_ptr);
+    ui_ptr = NULL;
+  }
+}
+
+void test_negative_dbmgr_ui_get_created_time(void) {
+  sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
+  const char *user_id = "test-user";
+  dbmgr_user_info_t ui_ptr = NULL;
+  sqc_chrono_t actual_created_time;
+
+  // create record
+  {
+    rc = s_dbmgr_user_info_record_create(user_id, &ui_ptr);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+  }
+
+  // invalid record
+  {
+    rc = dbmgr_ui_get_created_time(NULL, &actual_created_time);
+    TEST_ASSERT_EQUAL(SQC_RESULT_INVALID_ARGS, rc);
+  }
+
+  // invalid created_time
+  {
+    rc = dbmgr_ui_get_created_time(ui_ptr, NULL);
+    TEST_ASSERT_EQUAL(SQC_RESULT_INVALID_ARGS, rc);
+  }
+
+  // destroy record
+  {
+    s_dbmgr_user_info_record_destroy(ui_ptr);
+    ui_ptr = NULL;
+  }
+}
+
+void test_negative_dbmgr_ui_get_update_time(void) {
+  sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
+  const char *user_id = "test-user";
+  dbmgr_user_info_t ui_ptr = NULL;
+  sqc_chrono_t actual_update_time;
+
+  // create record
+  {
+    rc = s_dbmgr_user_info_record_create(user_id, &ui_ptr);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+  }
+
+  // invalid record
+  {
+    rc = dbmgr_ui_get_update_time(NULL, &actual_update_time);
+    TEST_ASSERT_EQUAL(SQC_RESULT_INVALID_ARGS, rc);
+  }
+
+  // invalid update_time
+  {
+    rc = dbmgr_ui_get_update_time(ui_ptr, NULL);
     TEST_ASSERT_EQUAL(SQC_RESULT_INVALID_ARGS, rc);
   }
 

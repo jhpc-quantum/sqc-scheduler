@@ -151,3 +151,38 @@ log_step() {
     echo "=========================================="
 }
 
+# clean_rex_apis
+# Remove rex-apis' installed lib/include (dedicated prefix).
+clean_rex_apis() {
+    log_step "Cleaning installed rex-apis artifacts"
+    rm -rf "${REX_APIS_INSTALL_PREFIX}/lib" "${REX_APIS_INSTALL_PREFIX}/include"
+}
+
+# clean_grpc_job_broker
+# Remove grpc-job-broker's installed lib/bin/include (dedicated prefix).
+clean_grpc_job_broker() {
+    log_step "Cleaning installed grpc-job-broker artifacts"
+    rm -rf "${GRPC_JOB_BROKER_INSTALL_PREFIX}/lib" \
+           "${GRPC_JOB_BROKER_INSTALL_PREFIX}/bin" \
+           "${GRPC_JOB_BROKER_INSTALL_PREFIX}/include"
+}
+
+# clean_sqc_rpc_sched
+# Remove sqc-rpc-sched's installed files by name, since its prefix
+# (EXTERNAL_ROOT) is shared with dependency libraries.
+clean_sqc_rpc_sched() {
+    log_step "Cleaning installed sqc-rpc-sched artifacts"
+    rm -f "${SQC_RPC_SCHED_INSTALL_PREFIX}/bin/sqc_rpc_sched" \
+          "${SQC_RPC_SCHED_INSTALL_PREFIX}/bin/sqc_rpc_client" \
+          "${SQC_RPC_SCHED_INSTALL_PREFIX}/bin/sqc_rpc_perf_client"
+    rm -f "${SQC_RPC_SCHED_INSTALL_PREFIX}"/lib/libsqc_*
+    rm -f "${SQC_RPC_SCHED_INSTALL_PREFIX}"/include/sqc_*.h
+}
+
+# clean_simple_sqc
+# Remove simple-sqc's installed lib/bin (dedicated prefix).
+clean_simple_sqc() {
+    log_step "Cleaning installed simple-sqc artifacts"
+    rm -rf "${SIMPLE_SQC_INSTALL_PREFIX}/lib" "${SIMPLE_SQC_INSTALL_PREFIX}/bin"
+}
+

@@ -9,8 +9,9 @@ INSTALL_BIN_EXE_DIR			=		$(DEST_BIN_EXEDIR)
 
 TARGETS		= 	$(TARGET_EXE)
 
-SRCS		=	adm_del_jobs.c adm_add_user.c adm_set_user_status.c cancel.c \
-				common.c delete.c list.c main.c status.c submit.c
+SRCS		=	adm_del_jobs.c adm_add_user.c adm_set_user_status.c \
+			adm_set_group_exec_time_limit.c adm_set_user_group_status.c cancel.c \
+			common.c delete.c list.c main.c status.c submit.c
 
 include $(MKRULES_BUILDDIR)/vars.mk
 

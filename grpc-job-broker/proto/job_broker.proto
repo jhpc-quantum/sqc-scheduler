@@ -68,6 +68,7 @@ message submit_job_request {
   transpiler_t transpiler = 7;
   bytes remark = 8;
   optional bytes user_token = 9;
+  optional bytes group_id = 10;
 }
 
 message submit_job_reply {
@@ -181,6 +182,35 @@ message adm_set_user_status_reply {
 }
 
 //
+// ADM_SET_GROUP_EXEC_TIME_LIMIT request and reply messages.
+//
+message adm_set_group_exec_time_limit_request {
+  bytes token = 1;
+  bytes group_id = 2;
+  uint64 exec_time_limit = 3;
+}
+
+message adm_set_group_exec_time_limit_reply {
+  int64 code = 1;
+  bytes message = 2;
+}
+
+//
+// ADM_SET_USER_GROUP_STATUS request and reply messages.
+//
+message adm_set_user_group_status_request {
+  bytes token = 1;
+  bytes user_id = 2;
+  bytes group_id = 3;
+  bool enabled = 4;
+}
+
+message adm_set_user_group_status_reply {
+  int64 code = 1;
+  bytes message = 2;
+}
+
+//
 // gRPC commands.
 //
 service job_broker {
@@ -192,4 +222,6 @@ service job_broker {
   rpc adm_del_jobs(adm_del_jobs_request) returns (adm_del_jobs_reply) {}
   rpc adm_add_user(adm_add_user_request) returns (adm_add_user_reply) {}
   rpc adm_set_user_status(adm_set_user_status_request) returns (adm_set_user_status_reply) {}
+  rpc adm_set_group_exec_time_limit(adm_set_group_exec_time_limit_request) returns (adm_set_group_exec_time_limit_reply) {}
+  rpc adm_set_user_group_status(adm_set_user_group_status_request) returns (adm_set_user_group_status_reply) {}
 }

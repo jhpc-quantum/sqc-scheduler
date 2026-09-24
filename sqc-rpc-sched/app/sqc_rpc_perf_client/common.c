@@ -5,7 +5,7 @@
 
 
 const char *program_name = "sqc_rpc_perf_client";
-const char *default_conf_dir = "~/.sqc_rpc_sched";
+const char *default_conf_dir = "~/.sqc-scheduler";
 const char *default_remark = "perf-remark";
 
 //

@@ -2,7 +2,7 @@
 
 #include "modtmpl.h"
 #include "dbmgr.h"
-#include "req_invoker.h"
+#include "job_sched.h"
 #include "srv_session.h"
 #include "grpc_broker.h"
 
@@ -33,10 +33,10 @@ s_once_proc(void) {
     sqc_exit_fatal("can't register the dbmgr modules.\n");
   }
 
-  r = req_invoker_register();
+  r = job_sched_register();
   if (r != SQC_RESULT_OK) {
     sqc_perror(r);
-    sqc_exit_fatal("can't register the req invoker modules.\n");
+    sqc_exit_fatal("can't register the job sched modules.\n");
   }
 
   r = srvsession_register();

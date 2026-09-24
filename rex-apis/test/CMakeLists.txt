@@ -121,6 +121,7 @@ target_include_directories(minio-cli-test PRIVATE
 target_link_libraries(minio-cli-test PRIVATE
                       GTest::gtest_main
                       cpprestsdk::cpprest
+                      miniocpp::miniocpp
                       libzippp::libzippp
                       rexapis
 )

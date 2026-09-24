@@ -1,0 +1,20 @@
+builddir	= @builddir@
+srcdir	=   @srcdir@
+VPATH	=   @srcdir@
+MKRULES_BUILDDIR	= @MKRULES_BUILDDIR@
+
+include $(MKRULES_BUILDDIR)/vars.mk
+
+UT_CPPFLAGS	=	-I$(APP_INC_SRCDIR) -I$(APP_JOB_SCHED_SRCDIR) -I$(REXAPIS_INCDIR) \
+			-I$(APP_DBMGR_SRCDIR) -I$(APP_DBMGR_SRCDIR)/test
+UT_CFLAGS	=	-Wno-format-zero-length -Wno-format-extra-args
+UT_CXXFLAGS	=	-Wno-format-zero-length -Wno-format-extra-args
+UT_DEP_LIBS	=	$(DEP_SQC_UTIL_LIB) $(DEP_APP_SQC_RPC_COMMON_LIB) \
+			$(DEP_APP_REQ_INVOKER_LIB)
+
+LDFLAGS		+=	-lm -luuid -lsqlite3
+
+EXCLUDE_TESTS	=
+
+include $(MKRULES_BUILDDIR)/unit-test.mk
+

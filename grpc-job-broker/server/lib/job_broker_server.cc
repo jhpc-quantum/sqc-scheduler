@@ -43,6 +43,7 @@ void initialize_job_broker_handlers(job_broker_handlers_t* handlers) {
     handlers->adm_del_jobs = nullptr;
     handlers->adm_add_user = nullptr;
     handlers->adm_set_user_status = nullptr;
+    handlers->adm_set_user_group_status = nullptr;
   }
 }
 
@@ -65,7 +66,8 @@ sqc_job_broker_url() {
 //
 static int64_t
 s_dummy_submit_job_handler(const char* token, uint32_t priority, const char* qprogram, int circuit_fmt,
-                           size_t shots, int qc_type, int transpiler, const char* remark, const char* user_token,
+                           size_t shots, int qc_type, int transpiler, const char* remark,
+                           const char* user_token, const char* group_id,
                            char** job_id, char** reply_msg) {
   static_cast<void>(token);
   static_cast<void>(priority);
@@ -76,6 +78,7 @@ s_dummy_submit_job_handler(const char* token, uint32_t priority, const char* qpr
   static_cast<void>(transpiler);
   static_cast<void>(remark);
   static_cast<void>(user_token);
+  static_cast<void>(group_id);
   static_cast<void>(job_id);
   static_cast<void>(reply_msg);
   return static_cast<int64_t>(RESULT_ANY_FAILURES);
@@ -156,12 +159,39 @@ s_dummy_adm_add_user_handler(const char* token, const char* user_id, char** repl
 }
 
 //
-// Dummy implementation of adm_del_jobs_handler.
+// Dummy implementation of adm_set_user_status_handler.
 //
 static int64_t
 s_dummy_adm_set_user_status_handler(const char* token, const char* user_id, bool enabled, char** reply_msg) {
   static_cast<void>(token);
   static_cast<void>(user_id);
+  static_cast<void>(enabled);
+  static_cast<void>(reply_msg);
+  return static_cast<int64_t>(RESULT_ANY_FAILURES);
+}
+
+//
+// Dummy implementation of adm_set_group_exec_time_limit_handler.
+//
+static int64_t
+s_dummy_adm_set_group_exec_time_limit_handler(const char *token, const char *group_id,
+                                              uint64_t exec_time_limit, char **reply_msg) {
+  static_cast<void>(token);
+  static_cast<void>(group_id);
+  static_cast<void>(exec_time_limit);
+  static_cast<void>(reply_msg);
+  return static_cast<int64_t>(RESULT_ANY_FAILURES);
+}
+
+//
+// Dummy implementation of adm_set_user_group_status_handler.
+//
+static int64_t
+s_dummy_adm_set_user_group_status_handler(const char *token, const char *user_id, const char *group_id,
+                                          bool enabled, char **reply_msg) {
+  static_cast<void>(token);
+  static_cast<void>(user_id);
+  static_cast<void>(group_id);
   static_cast<void>(enabled);
   static_cast<void>(reply_msg);
   return static_cast<int64_t>(RESULT_ANY_FAILURES);
@@ -178,6 +208,10 @@ static job_list_handler_t s_job_list_handler = s_dummy_job_list_handler;
 static adm_del_jobs_handler_t s_adm_del_jobs_handler = s_dummy_adm_del_jobs_handler;
 static adm_add_user_handler_t s_adm_add_user_handler = s_dummy_adm_add_user_handler;
 static adm_set_user_status_handler_t s_adm_set_user_status_handler = s_dummy_adm_set_user_status_handler;
+static adm_set_group_exec_time_limit_handler_t s_adm_set_group_exec_time_limit_handler =
+                                                       s_dummy_adm_set_group_exec_time_limit_handler;
+static adm_set_user_group_status_handler_t s_adm_set_user_group_status_handler =
+                                                   s_dummy_adm_set_user_group_status_handler;
 
 //
 // Returns a pointer to a function for submitting a job.
@@ -241,6 +275,22 @@ adm_add_user_handler() {
 adm_set_user_status_handler_t
 adm_set_user_status_handler() {
   return s_adm_set_user_status_handler;
+}
+
+//
+// Returns a pointer to a function for an administrator to set exec_time_limit of a group.
+//
+adm_set_group_exec_time_limit_handler_t
+adm_set_group_exec_time_limit_handler() {
+  return s_adm_set_group_exec_time_limit_handler;
+}
+
+//
+// Returns a pointer to a function for an administrator to set status of a user-group association.
+//
+adm_set_user_group_status_handler_t
+adm_set_user_group_status_handler() {
+  return s_adm_set_user_group_status_handler;
 }
 
 //
@@ -343,6 +393,12 @@ sqc_job_broker_initialize(const char* server_url, const char* conf_dir,
       }
       if (handlers->adm_set_user_status != nullptr) {
         s_adm_set_user_status_handler = handlers->adm_set_user_status;
+      }
+      if (handlers->adm_set_group_exec_time_limit != nullptr) {
+        s_adm_set_group_exec_time_limit_handler = handlers->adm_set_group_exec_time_limit;
+      }
+      if (handlers->adm_set_user_group_status != nullptr) {
+        s_adm_set_user_group_status_handler = handlers->adm_set_user_group_status;
       }
     }
     s_num_cqs = num_cqs;

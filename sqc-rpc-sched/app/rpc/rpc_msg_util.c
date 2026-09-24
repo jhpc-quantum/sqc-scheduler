@@ -14,26 +14,30 @@ s_message_id_string(rpc_msg_id_t id) {
   const char* ret = NULL;
 
   static const char *id_names[] = {
-    "OPEN_NEW_SESSION_REQUEST",     //  0
-    "OPEN_NEW_SESSION_REPLY",       //  1
-    "SUBMIT_JOB_REQUEST",           //  2
-    "SUBMIT_JOB_REPLY",             //  3
-    "JOB_STATUS_REQUEST",           //  4
-    "JOB_STATUS_REPLY",             //  5
-    "AUTH_REQUEST",                 //  6
-    "AUTH_REPLY",                   //  7
-    "CANCEL_JOB_REQUEST",           //  8
-    "CANCEL_JOB_REPLY",             //  9
-    "DELETE_JOB_REQUEST",           // 10
-    "DELETE_JOB_REPLY",             // 11
-    "JOB_LIST_REQUEST",             // 12
-    "JOB_LIST_REPLY"  ,             // 13
-    "ADM_DEL_JOBS_REQUEST",         // 14
-    "ADM_DEL_JOBS_REPLY",           // 15
-    "ADM_ADD_USER_REQUEST",         // 16
-    "ADM_ADD_USER_REPLY",           // 17
-    "ADM_SET_USER_STATUS_REQUEST",  // 18
-    "ADM_SET_USER_STATUS_REPLY",    // 19
+    "OPEN_NEW_SESSION_REQUEST",               //  0
+    "OPEN_NEW_SESSION_REPLY",                 //  1
+    "SUBMIT_JOB_REQUEST",                     //  2
+    "SUBMIT_JOB_REPLY",                       //  3
+    "JOB_STATUS_REQUEST",                     //  4
+    "JOB_STATUS_REPLY",                       //  5
+    "AUTH_REQUEST",                           //  6
+    "AUTH_REPLY",                             //  7
+    "CANCEL_JOB_REQUEST",                     //  8
+    "CANCEL_JOB_REPLY",                       //  9
+    "DELETE_JOB_REQUEST",                     // 10
+    "DELETE_JOB_REPLY",                       // 11
+    "JOB_LIST_REQUEST",                       // 12
+    "JOB_LIST_REPLY"  ,                       // 13
+    "ADM_DEL_JOBS_REQUEST",                   // 14
+    "ADM_DEL_JOBS_REPLY",                     // 15
+    "ADM_ADD_USER_REQUEST",                   // 16
+    "ADM_ADD_USER_REPLY",                     // 17
+    "ADM_SET_USER_STATUS_REQUEST",            // 18
+    "ADM_SET_USER_STATUS_REPLY",              // 19
+    "ADM_SET_GROUP_EXEC_TIME_LIMIT_REQUEST",  // 20
+    "ADM_SET_GROUP_EXEC_TIME_LIMIT_REPLY",    // 21
+    "ADM_SET_USER_GROUP_STATUS_REQUEST",      // 22
+    "ADM_SET_USER_GROUP_STATUS_REPLY",        // 23
   };
   static const char *unknown = "unknown";
 
@@ -55,26 +59,30 @@ s_message_name_string(rpc_msg_id_t id) {
   const char* ret = NULL;
 
   static const char *id_names[] = {
-    "OPEN_NEW_SESSION",     //  0
-    "OPEN_NEW_SESSION",     //  1
-    "SUBMIT_JOB",           //  2
-    "SUBMIT_JOB",           //  3
-    "JOB_STATUS",           //  4
-    "JOB_STATUS",           //  5
-    "AUTH",                 //  6
-    "AUTH",                 //  7
-    "CANCEL_JOB",           //  8
-    "CANCEL_JOB",           //  9
-    "DELETE_JOB",           // 10
-    "DELETE_JOB",           // 11
-    "JOB_LIST",             // 12
-    "JOB_LIST"  ,           // 13
-    "ADM_DEL_JOBS",         // 14
-    "ADM_DEL_JOBS",         // 15
-    "ADM_ADD_USER",         // 16
-    "ADM_ADD_USER",         // 17
-    "ADM_SET_USER_STATUS",  // 18
-    "ADM_SET_USER_STATUS",  // 19
+    "OPEN_NEW_SESSION",               //  0
+    "OPEN_NEW_SESSION",               //  1
+    "SUBMIT_JOB",                     //  2
+    "SUBMIT_JOB",                     //  3
+    "JOB_STATUS",                     //  4
+    "JOB_STATUS",                     //  5
+    "AUTH",                           //  6
+    "AUTH",                           //  7
+    "CANCEL_JOB",                     //  8
+    "CANCEL_JOB",                     //  9
+    "DELETE_JOB",                     // 10
+    "DELETE_JOB",                     // 11
+    "JOB_LIST",                       // 12
+    "JOB_LIST"  ,                     // 13
+    "ADM_DEL_JOBS",                   // 14
+    "ADM_DEL_JOBS",                   // 15
+    "ADM_ADD_USER",                   // 16
+    "ADM_ADD_USER",                   // 17
+    "ADM_SET_USER_STATUS",            // 18
+    "ADM_SET_USER_STATUS",            // 19
+    "ADM_SET_GROUP_EXEC_TIME_LIMIT",  // 20
+    "ADM_SET_GROUP_EXEC_TIME_LIMIT",  // 21
+    "ADM_SET_USER_GROUP_STATUS",      // 22
+    "ADM_SET_USER_GROUP_STATUS",      // 23
   };
   static const char *unknown = "unknown";
 
@@ -192,10 +200,11 @@ s_pack_open_new_session_request(rpc_auth_method_t auth_method, char **body, size
 // Serialize a 'submit_job_request' message using protobuf-c.
 //
 static inline sqc_result_t
-s_pack_submit_job_request(uint8_t priority, const char *qprogram, sqc_rpc_sched_circuit_fmt_t circuit_fmt,
+s_pack_submit_job_request(uint8_t priority, const char *qprogram,
+                          sqc_rpc_sched_circuit_fmt_t circuit_fmt,
                           size_t shots, sqc_rpc_sched_qc_type_t qc_type,
                           sqc_rpc_sched_transpiler_t transpiler,
-                          const char *remark, const char *user_token,
+                          const char *remark, const char *user_token, const char *group_id,
                           char **body, size_t *len) {
   sqc_result_t ret = SQC_RESULT_ANY_FAILURES;
 
@@ -216,6 +225,12 @@ s_pack_submit_job_request(uint8_t priority, const char *qprogram, sqc_rpc_sched_
       request.has_user_token = true;
       request.user_token.data = (uint8_t *) user_token;
       request.user_token.len = strlen(user_token) + 1u;
+    }
+
+    if (group_id != NULL) {
+      request.has_group_id = true;
+      request.group_id.data = (uint8_t *) group_id;
+      request.group_id.len = strlen(group_id) + 1u;
     }
 
     *len = submit_job_request__get_packed_size(&request);
@@ -452,6 +467,7 @@ s_unpack_job_status_reply(char *body, size_t len, sqc_result_t *code, char **msg
         free(*qc_job_id);
         free(*result);
         *msg = NULL;
+        *qc_job_id = NULL;
         *result = NULL;
         ret = SQC_RESULT_NO_MEMORY;
       }
@@ -655,10 +671,12 @@ s_pack_job_list_reply(sqc_result_t code, const char *msg,
     if (unlikely(ret != SQC_RESULT_OK)) {
       if (likely(reply.jobs != NULL)) {
         for (size_t i = 0u; i < n_jobs; i++) {
-          free(reply.jobs[i]->job_id.data);
-          free(reply.jobs[i]->qc_job_id.data);
-          free(reply.jobs[i]->result.data);
-          free(reply.jobs[i]);
+          if (reply.jobs[i] != NULL) {
+            free(reply.jobs[i]->job_id.data);
+            free(reply.jobs[i]->qc_job_id.data);
+            free(reply.jobs[i]->result.data);
+            free(reply.jobs[i]);
+          }
         }
         free(reply.jobs);
       }
@@ -739,7 +757,7 @@ s_unpack_job_list_reply(char *body, size_t len, sqc_result_t *code, char **msg,
     if (likely(reply != NULL && RPC_VALIDATE_PROTOC_BYTES(&reply->message) == true)) {
       *code = (sqc_result_t) reply->code;
       *msg = strdup((char *) reply->message.data);
-      if (unlikely(msg == NULL)) {
+      if (unlikely(*msg == NULL)) {
         ret = SQC_RESULT_NO_MEMORY;
         sqc_msg_error("Failed to build a job_list_reply message, %s\n",
                       sqc_error_get_string(ret));
@@ -886,6 +904,71 @@ s_pack_adm_set_user_status_request(const char *user_id, bool enabled, char **bod
 }
 
 
+//
+// Serialize a 'adm_set_group_exec_time_limit' message using protobuf-c.
+//
+static inline sqc_result_t
+s_pack_adm_set_group_exec_time_limit_request(const char *group_id,
+                                             uint64_t exec_time_limit,
+                                             char **body, size_t *len) {
+  sqc_result_t ret = SQC_RESULT_ANY_FAILURES;
+
+  if (likely(group_id != NULL && body != NULL && len != NULL)) {
+    AdmSetGroupExecTimeLimitRequest request = ADM_SET_GROUP_EXEC_TIME_LIMIT_REQUEST__INIT;
+    request.group_id.data = (uint8_t *) group_id;
+    request.group_id.len = strlen(group_id) + 1u;
+    request.exec_time_limit = exec_time_limit;
+    *len = adm_set_group_exec_time_limit_request__get_packed_size(&request);
+    *body = malloc(*len);
+
+    if (likely(*body != NULL)) {
+      (void) adm_set_group_exec_time_limit_request__pack(&request, (uint8_t *) *body);
+      ret = SQC_RESULT_OK;
+    } else {
+      ret = SQC_RESULT_NO_MEMORY;
+    }
+
+  } else {
+    ret = SQC_RESULT_INVALID_ARGS;
+  }
+
+  return ret;
+}
+
+
+//
+// Serialize a 'adm_set_user_group_status' message using protobuf-c.
+//
+static inline sqc_result_t
+s_pack_adm_set_user_group_status_request(const char *user_id, const char *group_id, bool enabled,
+                                         char **body, size_t *len) {
+  sqc_result_t ret = SQC_RESULT_ANY_FAILURES;
+
+  if (likely(user_id != NULL && group_id != NULL && body != NULL && len != NULL)) {
+    AdmSetUserGroupStatusRequest request = ADM_SET_USER_GROUP_STATUS_REQUEST__INIT;
+    request.user_id.data = (uint8_t *) user_id;
+    request.user_id.len = strlen(user_id) + 1u;
+    request.group_id.data = (uint8_t *) group_id;
+    request.group_id.len = strlen(group_id) + 1u;
+    request.enabled = enabled;
+    *len = adm_set_user_group_status_request__get_packed_size(&request);
+    *body = malloc(*len);
+
+    if (likely(*body != NULL)) {
+      (void) adm_set_user_group_status_request__pack(&request, (uint8_t *) *body);
+      ret = SQC_RESULT_OK;
+    } else {
+      ret = SQC_RESULT_NO_MEMORY;
+    }
+
+  } else {
+    ret = SQC_RESULT_INVALID_ARGS;
+  }
+
+  return ret;
+}
+
+
 /*
  * Exported APIs
  */
@@ -934,11 +1017,14 @@ rpc_unpack_open_new_session_reply(char *body, size_t len, sqc_result_t *code, ch
 
 
 sqc_result_t
-rpc_pack_submit_job_request(uint8_t priority, const char *qprogram, sqc_rpc_sched_circuit_fmt_t circuit_fmt,
-                            size_t shots, sqc_rpc_sched_qc_type_t qc_type, sqc_rpc_sched_transpiler_t transpiler,
-                            const char *remark, const char *user_token, char **body, size_t *len) {
+rpc_pack_submit_job_request(uint8_t priority, const char *qprogram,
+                            sqc_rpc_sched_circuit_fmt_t circuit_fmt,
+                            size_t shots, sqc_rpc_sched_qc_type_t qc_type,
+                            sqc_rpc_sched_transpiler_t transpiler,
+                            const char *remark, const char *user_token, const char *group_id,
+                            char **body, size_t *len) {
   return s_pack_submit_job_request(priority, qprogram, circuit_fmt, shots, qc_type, transpiler,
-                                   remark, user_token, body, len);
+                                   remark, user_token, group_id, body, len);
 }
 
 
@@ -1096,5 +1182,42 @@ rpc_pack_adm_set_user_status_reply(sqc_result_t code, const char *msg, char **bo
 
 sqc_result_t
 rpc_unpack_adm_set_user_status_reply(char *body, size_t len, sqc_result_t *code, char **msg) {
+  return s_unpack_basic_reply(body, len, code, msg);
+}
+
+sqc_result_t
+rpc_pack_adm_set_group_exec_time_limit_request(const char *group_id,
+                                               uint64_t exec_time_limit,
+                                               char **body, size_t *len) {
+  return s_pack_adm_set_group_exec_time_limit_request(group_id, exec_time_limit, body, len);
+}
+
+sqc_result_t
+rpc_pack_adm_set_group_exec_time_limit_reply(sqc_result_t code, const char *msg,
+                                             char **body, size_t *len) {
+  return s_pack_basic_reply(code, msg, body, len);
+}
+
+sqc_result_t
+rpc_unpack_adm_set_group_exec_time_limit_reply(char *body, size_t len,
+                                               sqc_result_t *code, char **msg) {
+  return s_unpack_basic_reply(body, len, code, msg);
+}
+
+sqc_result_t
+rpc_pack_adm_set_user_group_status_request(const char *user_id, const char *group_id, bool enabled,
+                                           char **body, size_t *len) {
+  return s_pack_adm_set_user_group_status_request(user_id, group_id, enabled, body, len);
+}
+
+sqc_result_t
+rpc_pack_adm_set_user_group_status_reply(sqc_result_t code, const char *msg,
+                                         char **body, size_t *len) {
+  return s_pack_basic_reply(code, msg, body, len);
+}
+
+sqc_result_t
+rpc_unpack_adm_set_user_group_status_reply(char *body, size_t len,
+                                           sqc_result_t *code, char **msg) {
   return s_unpack_basic_reply(body, len, code, msg);
 }

@@ -5,6 +5,7 @@ namespace sqc_job {
 
 Job::Job()
   : user_id_(),
+    group_id_(),
     priority_(0u),
     qprogram_(),
     circuit_fmt_(0),
@@ -17,9 +18,11 @@ Job::Job()
     status_(JobStatus::Unknown) {
 }
 
-Job::Job(const std::string& user_id, std::uint32_t priority, const std::string& qprogram, int circuit_fmt,
-         std::size_t shots, int qc_type, int transpiler, const std::string& remark, std::optional<std::string> user_token)
+Job::Job(const std::string& user_id, const std::string& group_id, std::uint32_t priority,
+         const std::string& qprogram, int circuit_fmt, std::size_t shots, int qc_type,
+         int transpiler, const std::string& remark, std::optional<std::string> user_token)
   : user_id_(user_id),
+    group_id_(group_id),
     priority_(priority),
     qprogram_(qprogram),
     circuit_fmt_(circuit_fmt),
@@ -38,10 +41,12 @@ Job::Job(const std::string& user_id, std::uint32_t priority, const std::string& 
   id_ = txt;
 }
 
-Job::Job(const std::string& user_id, std::uint32_t priority, const std::string& qprogram, int circuit_fmt,
-         std::size_t shots, int qc_type, int transpiler, const std::string& remark, std::optional<std::string> user_token,
+Job::Job(const std::string& user_id, const std::string& group_id, std::uint32_t priority,
+         const std::string& qprogram, int circuit_fmt, std::size_t shots, int qc_type,
+         int transpiler, const std::string& remark, std::optional<std::string> user_token,
          const std::string& id, const std::string& qc_job_id, JobStatus status)
   : user_id_(user_id),
+    group_id_(group_id),
     priority_(priority),
     qprogram_(qprogram),
     circuit_fmt_(circuit_fmt),

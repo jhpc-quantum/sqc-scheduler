@@ -118,13 +118,13 @@ the following files are required:
 Put the server or CA certificate.
 
 ```
-$ mkdir ~/.sqc_rpc_sched
-$ cp grpc_server_root.crt ~/.sqc_rpc_sched/grpc_server_root.crt
+$ mkdir ~/.sqc-scheduler
+$ cp grpc_server_root.crt ~/.sqc-scheduler/grpc_server_root.crt
 ```
 
 Put a JWT token.
 ```
-$ cp jwt.token ~/.sqc_rpc_sched/jwt.token
+$ cp jwt.token ~/.sqc-scheduler/jwt.token
 ```
 
 Create a QASM file.

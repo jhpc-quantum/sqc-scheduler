@@ -18,7 +18,7 @@ CPPFLAGS	+=	-I$(APP_INC_SRCDIR)
 
 DEP_LIBS	+=	$(DEP_APP_SQC_RPC_COMMON_LIB)
 
-SRCS		=	dbmgr_db.c dbmgr.c
+SRCS		=	dbmgr_util.c dbmgr_db.c dbmgr.c
 
 include $(MKRULES_BUILDDIR)/rules.mk
 

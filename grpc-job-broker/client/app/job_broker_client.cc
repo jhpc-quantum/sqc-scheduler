@@ -21,10 +21,13 @@ job_broker_client::~job_broker_client() {
 //
 // Sends 'submit_job' request.
 //
-grpc::Status job_broker_client::submit_job(const std::string& qprogram, circuit_fmt_t circuit_fmt,
-                                           std::size_t shots, ::qc_type_t qc_type, transpiler_t transpiler,
-                                           const std::string& remark, std::optional<std::string> user_token,
-                                           std::uint32_t priority, ::submit_job_reply& reply) {
+grpc::Status job_broker_client::submit_job(std::uint32_t priority,
+                                           const std::string& qprogram, circuit_fmt_t circuit_fmt,
+                                           std::size_t shots, ::qc_type_t qc_type,
+                                           transpiler_t transpiler, const std::string& remark,
+                                           std::optional<std::string> user_token,
+                                           std::optional<std::string> group_id,
+                                           ::submit_job_reply& reply) {
   submit_job_request request;
   request.set_token(token_);
   request.set_qprogram(qprogram);
@@ -37,6 +40,11 @@ grpc::Status job_broker_client::submit_job(const std::string& qprogram, circuit_
     request.set_user_token(user_token.value());
   } else {
     request.clear_user_token();
+  }
+  if (group_id.has_value()) {
+    request.set_group_id(group_id.value());
+  } else {
+    request.clear_group_id();
   }
   request.set_priority(priority);
   grpc::ClientContext context;
@@ -129,4 +137,33 @@ job_broker_client::adm_set_user_status(const std::string& user_id, bool enabled,
   request.set_enabled(enabled);
   grpc::ClientContext context;
   return stub_->adm_set_user_status(&context, request, &reply);
+}
+
+//
+// Sends 'adm_set_group_exec_time_limit' request.
+//
+grpc::Status
+job_broker_client::adm_set_group_exec_time_limit(const std::string& group_id, uint64_t exec_time_limit,
+                                                 adm_set_group_exec_time_limit_reply& reply) {
+  adm_set_group_exec_time_limit_request request;
+  request.set_token(token_);
+  request.set_group_id(group_id);
+  request.set_exec_time_limit(exec_time_limit);
+  grpc::ClientContext context;
+  return stub_->adm_set_group_exec_time_limit(&context, request, &reply);
+}
+
+//
+// Sends 'adm_set_user_group_status' request.
+//
+grpc::Status
+job_broker_client::adm_set_user_group_status(const std::string& user_id, const std::string& group_id,
+                                             bool enabled, adm_set_user_group_status_reply& reply) {
+  adm_set_user_group_status_request request;
+  request.set_token(token_);
+  request.set_user_id(user_id);
+  request.set_group_id(group_id);
+  request.set_enabled(enabled);
+  grpc::ClientContext context;
+  return stub_->adm_set_user_group_status(&context, request, &reply);
 }

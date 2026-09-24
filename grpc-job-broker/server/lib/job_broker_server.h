@@ -19,8 +19,8 @@ typedef struct grpc_job_info grpc_job_info_t;
 
 // Function pointer of 'submit_job' handler.
 typedef int64_t (*submit_job_handler_t)(const char* token, uint32_t priority, const char* qprogram, int circuit_fmt,
-                                        size_t shots, int qc_type, int transpiler,
-                                        const char* remark, const char* user_token,
+                                        size_t shots, int qc_type, int transpiler, const char* remark,
+                                        const char* user_token, const char* group_id,
                                         char** job_id, char** reply_msg);
 
 // Function pointer of 'job_status' handler.
@@ -50,6 +50,15 @@ typedef int64_t (*adm_add_user_handler_t)(const char* token, const char* user_id
 typedef int64_t (*adm_set_user_status_handler_t)(const char* token, const char* user_id, bool enabled,
                                                  char** reply_msg);
 
+// Function pointer of 'adm_set_group_exec_time_limit' handler.
+typedef int64_t (*adm_set_group_exec_time_limit_handler_t)(const char *token, const char *group_id,
+                                                           uint64_t exec_time_limit, char **reply_msg);
+
+// Function pointer of 'adm_set_user_group_status' handler.
+typedef int64_t (*adm_set_user_group_status_handler_t)(const char *token, const char *user_id,
+                                                       const char *group_id, bool enabled,
+                                                       char **reply_msg);
+
 // Set of function pointers for RPC handlers.
 typedef struct  {
   submit_job_handler_t submit_job;
@@ -60,6 +69,8 @@ typedef struct  {
   adm_del_jobs_handler_t adm_del_jobs;
   adm_add_user_handler_t adm_add_user;
   adm_set_user_status_handler_t adm_set_user_status;
+  adm_set_group_exec_time_limit_handler_t adm_set_group_exec_time_limit;
+  adm_set_user_group_status_handler_t adm_set_user_group_status;
 } job_broker_handlers_t;
 
 // Initialize a job_broker_handlers_t object.
@@ -99,6 +110,14 @@ adm_add_user_handler(void);
 // Returns a function for an administrator to set status of a user.
 adm_set_user_status_handler_t
 adm_set_user_status_handler(void);
+
+// Returns a function for an administrator to set exec_time_limit of a group.
+adm_set_group_exec_time_limit_handler_t
+adm_set_group_exec_time_limit_handler(void);
+
+// Returns a function for an administrator to set status of a user-group association.
+adm_set_user_group_status_handler_t
+adm_set_user_group_status_handler(void);
 
 // Create an array of 'grpc_job_info' objects.
 int64_t

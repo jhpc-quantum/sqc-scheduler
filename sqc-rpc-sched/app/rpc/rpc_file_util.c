@@ -54,14 +54,14 @@ s_expand_path(const char* path, char **out_path) {
           }
         } else if (tmp_err == 0) {
           ret = SQC_RESULT_INVALID_ARGS;
-          sqc_msg_debug(5, "Invalid path, no such user: '%s'", path);
+          sqc_msg_debug(5, "Invalid path, no such user: '%s'\n", path);
         } else {
           ret = SQC_RESULT_POSIX_API_ERROR;
-          sqc_msg_debug(5, "Failed to get the password entry: %s", strerror(errno));
+          sqc_msg_debug(5, "Failed to get the password entry: %s\n", strerror(errno));
         }
       } else {
         ret = SQC_RESULT_INVALID_ARGS;
-        sqc_msg_debug(5, "Too long user name: '%s'", path);
+        sqc_msg_debug(5, "Too long user name: '%s'\n", path);
       }
     } else {
       tmp_path = strdup(path);
@@ -78,7 +78,7 @@ s_expand_path(const char* path, char **out_path) {
   }
 
   if (likely(ret == SQC_RESULT_OK)) {
-    sqc_msg_debug(5, "Expanded a path: '%s' -> '%s'", path, *out_path);
+    sqc_msg_debug(5, "Expanded a path: '%s' -> '%s'\n", path, *out_path);
   } else {
     free(tmp_path);
   }
@@ -114,7 +114,7 @@ s_read_text_file(const char *file, char **text, size_t *textlen) {
                         strerror(errno));
       } else if (unlikely(file_size == 0)) {
         ret = SQC_RESULT_PUBLIC_KEY_READ_FAILURE;
-        sqc_msg_debug(5, "The file is empty");
+        sqc_msg_debug(5, "The file is empty\n");
       } else {
         sqc_msg_debug(5, "Got size of the file: %lu\n", (unsigned long)file_size);
         errno = 0;

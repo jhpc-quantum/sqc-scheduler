@@ -27,9 +27,10 @@ public:
 
   // Sends 'submit_job' request.
   grpc::Status
-  submit_job(const std::string& qprogram, circuit_fmt_t circuit_fmt, std::size_t shots, qc_type_t qc_type,
-             transpiler_t transpiler, const std::string& remark, std::optional<std::string> user_token,
-             std::uint32_t priority, submit_job_reply& reply);
+  submit_job(std::uint32_t priority, const std::string& qprogram, circuit_fmt_t circuit_fmt,
+             std::size_t shots, qc_type_t qc_type, transpiler_t transpiler, const std::string& remark,
+             std::optional<std::string> user_token, std::optional<std::string> group_id,
+             submit_job_reply& reply);
 
   // Sends 'job_status' request.
   grpc::Status
@@ -58,6 +59,16 @@ public:
   // Sends 'adm_set_user_status' request.
   grpc::Status
   adm_set_user_status(const std::string& user_id, bool enabled, adm_set_user_status_reply& reply);
+
+  // Sends 'adm_set_group_exec_time_limit' request.
+  grpc::Status
+  adm_set_group_exec_time_limit(const std::string& group_id, uint64_t exec_time_limit,
+                                adm_set_group_exec_time_limit_reply& reply);
+
+  // Sends 'adm_set_user_group_status' request.
+  grpc::Status
+  adm_set_user_group_status(const std::string& user_id, const std::string& group_id, bool enabled,
+                            adm_set_user_group_status_reply& reply);
 
 private:
   std::unique_ptr<job_broker::Stub> stub_;

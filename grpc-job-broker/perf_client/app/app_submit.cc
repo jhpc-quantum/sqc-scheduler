@@ -32,6 +32,7 @@ typedef struct perf_args {
   transpiler_t transpiler;
   std::string remark;
   std::optional<std::string> user_token;
+  std::optional<std::string> group_id;
   uint32_t loop_count;
 } perf_args_t;
 
@@ -50,7 +51,8 @@ static inline std::uint64_t get_nanotime() noexcept {
 static bool
 s_submit_job(job_broker_perf_client& client, std::uint32_t priority, const std::string& qprogram,
              circuit_fmt_t circuit_fmt, std::size_t shots, qc_type_t qc_type, transpiler_t transpiler,
-             const std::string& remark, std::optional<std::string> user_token,
+             const std::string& remark,
+             std::optional<std::string> user_token, std::optional<std::string> group_id,
              const std::uint32_t thread_id, const std::uint32_t loop_count) {
   std::uint64_t submit_start = 0;
   std::uint64_t submit_end = 0;
@@ -59,7 +61,7 @@ s_submit_job(job_broker_perf_client& client, std::uint32_t priority, const std::
   submit_job_reply reply;
   submit_start = get_nanotime();
   grpc::Status grpc_status = client.submit_job(qprogram, circuit_fmt, shots, qc_type, transpiler,
-                                               remark, user_token, priority, reply);
+                                               remark, user_token, group_id, priority, reply);
   submit_end = get_nanotime();
 
   // Parses the reply.
@@ -115,8 +117,9 @@ thread_entry(void *arg) {
   }
 
   for (uint32_t i = 0; i < args->loop_count; i++) {
-    (void)s_submit_job(*client, args->priority, args->qprogram, args->circuit_fmt, args->shots, args->qc_type,
-                       args->transpiler, args->remark, args->user_token, args->thread_id, i);
+    (void)s_submit_job(*client, args->priority, args->qprogram, args->circuit_fmt,
+                       args->shots, args->qc_type, args->transpiler, args->remark,
+                       args->user_token, args->group_id, args->thread_id, i);
   }
 
   delete client;
@@ -165,7 +168,9 @@ do_subcmd_submit(int argc, char* argv[], int optind) {
   transpiler_t transpiler = TRANSPILER_NONE;
   const std::string  remark = "perf-remark";
   const char* env_user_token = getenv("SQC_GRPC_USER_TOKEN");
+  const char* env_group_id = getenv("SQC_GRPC_GROUP_ID");
   std::optional<std::string> user_token;
+  std::optional<std::string> group_id;
   std::uint32_t thread_num = 1u;
   std::uint32_t loop_count = 1u;
 
@@ -250,12 +255,14 @@ do_subcmd_submit(int argc, char* argv[], int optind) {
   }
 
   user_token = env_user_token ? std::optional<std::string>{env_user_token} : std::nullopt;
+  group_id = env_group_id ? std::optional<std::string>{env_group_id} : std::nullopt;
 
   msg_info("submit_job request: priority=%u, qprogram_file=%s, shots=%zu, qc_type=%d, "
-           "transpiler=%d, remark=%s, user_token=%s, server=%s, conf_dir=%s, "
+           "transpiler=%d, remark=%s, user_token=%s, group_id=%s, server=%s, conf_dir=%s, "
            "thread_num=%d, loop_count=%d\n",
            priority, qprogram_file.c_str(), shots, qc_type, transpiler, remark.c_str(),
-           user_token.value_or("null").c_str(), server.c_str(), conf_dir.c_str(), thread_num, loop_count);
+           user_token.value_or("null").c_str(), group_id.value_or("null").c_str(),
+           server.c_str(), conf_dir.c_str(), thread_num, loop_count);
 
   std::vector<perf_args_t> perf_args(thread_num);
   std::vector<pthread_t> threads(thread_num);
@@ -281,6 +288,7 @@ do_subcmd_submit(int argc, char* argv[], int optind) {
     perf_args[i].transpiler = transpiler;
     perf_args[i].remark = remark;
     perf_args[i].user_token = user_token;
+    perf_args[i].group_id = group_id;
     perf_args[i].loop_count = loop_count;
 
     rc = pthread_create(&threads[i], NULL, thread_entry, &perf_args[i]);

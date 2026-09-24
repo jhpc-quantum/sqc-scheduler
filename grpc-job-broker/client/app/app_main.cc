@@ -29,16 +29,18 @@ s_print_help_main(const char* argv0) {
             << std::endl;
 
   std::cout << "Sub-commands:" << std::endl;
-  std::cout << "  submit                 submit a job" << std::endl;
-  std::cout << "  status                 get status of the submitted job" << std::endl;
-  std::cout << "  cancel                 cancel the submitted job" << std::endl;
-  std::cout << "  delete                 delete the submitted job" << std::endl;
-  std::cout << "  list                   get information about submitted jobs" << std::endl;
-  std::cout << "  adm-del-jobs           delete submitted jobs" << std::endl;
-  std::cout << "  adm-add-user           add a user" << std::endl;
-  std::cout << "  adm-set-user-status    set user status\n" << std::endl;
+  std::cout << "  submit                         submit a job" << std::endl;
+  std::cout << "  status                         get status of the submitted job" << std::endl;
+  std::cout << "  cancel                         cancel the submitted job" << std::endl;
+  std::cout << "  delete                         delete the submitted job" << std::endl;
+  std::cout << "  list                           get information about submitted jobs" << std::endl;
+  std::cout << "  adm-del-jobs                   delete submitted jobs" << std::endl;
+  std::cout << "  adm-add-user                   add a user" << std::endl;
+  std::cout << "  adm-set-user-status            set user status" << std::endl;
+  std::cout << "  adm-set-group-exec-time-limit  set group executable time limit" << std::endl;
+  std::cout << "  adm-set-user-group-status      set user-group association status" << std::endl;
   std::cout << std::endl;
-  std::cout << "Try '" << prog << "' SUB-COMMAND --help' for more details"  << std::endl;
+  std::cout << "Try '" << prog << " SUB-COMMAND --help' for more details"  << std::endl;
 }
 
 //
@@ -88,6 +90,10 @@ main(int argc, char* argv[]) {
     return do_subcmd_adm_add_user(argc, argv, optind);
   } else if (subcmd == "adm-set-user-status") {
     return do_subcmd_adm_set_user_status(argc, argv, optind);
+  } else if (subcmd == "adm-set-group-exec-time-limit") {
+    return do_subcmd_adm_set_group_exec_time_limit(argc, argv, optind);
+  } else if (subcmd == "adm-set-user-group-status") {
+    return do_subcmd_adm_set_user_group_status(argc, argv, optind);
   } else {
     std::cerr << "Invalid sub-command: " << subcmd << std::endl;
     return 1;

@@ -38,7 +38,8 @@ job_broker_service_impl::submit_job(grpc::ServerContext* context,
   try {
     std::string token = strip_text(request->token());
     msg_info("%s: Received a request: token=%s, priority=%u, qprogram=%zu bytes, "
-             "shots=%zu, qc_type=%d, transpiler=%ld, remark=%s, has_user_token=%s\n",
+             "shots=%zu, qc_type=%d, transpiler=%ld, remark=%s, "
+             "has_user_token=%s, group_id=%s\n",
              log_prefix,
              token.c_str(),
              static_cast<unsigned int>(request->priority()),
@@ -47,7 +48,8 @@ job_broker_service_impl::submit_job(grpc::ServerContext* context,
              static_cast<int>(request->qc_type()),
              static_cast<long>(request->transpiler()),
              request->remark().c_str(),
-             static_cast<bool>(request->has_user_token()) ? "true" : "false");
+             static_cast<bool>(request->has_user_token()) ? "true" : "false",
+             static_cast<bool>(request->has_group_id()) ? "true" : "false");
 
     // Creates a job.
     char* job_id = nullptr;
@@ -55,6 +57,11 @@ job_broker_service_impl::submit_job(grpc::ServerContext* context,
     const char* user_token = nullptr;
     if (request->has_user_token()) {
       user_token = request->user_token().c_str();
+    }
+
+    const char* group_id = nullptr;
+    if (request->has_group_id()) {
+      group_id = request->group_id().c_str();
     }
 
     auto handle_submit_job = submit_job_handler();
@@ -67,6 +74,7 @@ job_broker_service_impl::submit_job(grpc::ServerContext* context,
                              static_cast<int>(request->transpiler()),
                              request->remark().c_str(),
                              user_token,
+                             group_id,
                              &job_id,
                              &reply_msg);
     if (code == RESULT_OK) {
@@ -452,6 +460,104 @@ job_broker_service_impl::adm_set_user_status(grpc::ServerContext* context,
     }
   } catch (...) {
     msg_error("%s: An exception occurred while setting the status of an user\n", log_prefix);
+  }
+
+  try {
+    // Send a reply.
+    reply->set_code(code);
+    reply->set_message(reply_msg == nullptr ? "" : reply_msg);
+    msg_info("%s: Send a reply: code=%ld, message=%s\n",
+             log_prefix, static_cast<long>(reply->code()), reply->message().c_str());
+  } catch (...) {
+    msg_error("%s: An exception occurred while replying a message\n", log_prefix);
+  }
+
+  free(reply_msg);
+  return grpc::Status::OK;
+}
+
+//
+// gRPC handler for 'adm_set_group_exec_time_limit' request.
+//
+grpc::Status
+job_broker_service_impl::adm_set_group_exec_time_limit(grpc::ServerContext *context,
+                                                       const adm_set_group_exec_time_limit_request *request,
+                                                       adm_set_group_exec_time_limit_reply *reply) {
+  static constexpr char log_prefix[] = "gRPC-ADM_SET_GROUP_EXEC_TIME_LIMIT";
+  static_cast<void>(context);
+  result_t code = RESULT_ANY_RUNTIME_ERROR;
+  char* reply_msg = nullptr;
+
+  try {
+    std::string token = strip_text(request->token());
+    msg_info("%s: Received a request: user_id=%s, exec_time_limit=%ld, token=%s\n",
+             log_prefix, request->group_id().c_str(),
+             request->exec_time_limit(), token.c_str());
+
+
+    // Set exec_time_limit.
+    auto handle_adm_set_group_exec_time_limit = adm_set_group_exec_time_limit_handler();
+    code = handle_adm_set_group_exec_time_limit(token.c_str(), request->group_id().c_str(),
+                                                request->exec_time_limit(), &reply_msg);
+    if (code == RESULT_OK) {
+      msg_debug(5, "%s: Set exec_time_limit", log_prefix);
+    } else {
+      msg_debug(5, "%s: Failed to set group exec_time_limit: code=%ld, group_id=%s, exec_time_limit=%ld\n",
+                log_prefix, static_cast<long>(code),
+                request->group_id().c_str(), request->exec_time_limit());
+    }
+  } catch (...) {
+    msg_error("%s: An exception occurred while setting the exec_time_limit of an group\n", log_prefix);
+  }
+
+  try {
+    // Send a reply.
+    reply->set_code(code);
+    reply->set_message(reply_msg == nullptr ? "" : reply_msg);
+    msg_info("%s: Send a reply: code=%ld, message=%s\n",
+             log_prefix, static_cast<long>(reply->code()), reply->message().c_str());
+  } catch (...) {
+    msg_error("%s: An exception occurred while replying a message\n", log_prefix);
+  }
+
+  free(reply_msg);
+  return grpc::Status::OK;
+}
+
+//
+// gRPC handler for 'adm_set_user_group_status' request.
+//
+grpc::Status
+job_broker_service_impl::adm_set_user_group_status(grpc::ServerContext *context,
+                                                   const adm_set_user_group_status_request *request,
+                                                   adm_set_user_group_status_reply *reply) {
+  static constexpr char log_prefix[] = "gRPC-ADM_SET_USER_GROUP_STATUS";
+  static_cast<void>(context);
+  result_t code = RESULT_ANY_RUNTIME_ERROR;
+  char* reply_msg = nullptr;
+
+  try {
+    std::string token = strip_text(request->token());
+    msg_info("%s: Received a request: user_id=%s, group_id=%s, enabled=%s, token=%s\n",
+             log_prefix, request->user_id().c_str(), request->group_id().c_str(),
+             request->enabled() ? "true" : "false", token.c_str());
+
+    // Set the user-group association status.
+    auto handle_adm_set_user_group_status = adm_set_user_group_status_handler();
+    code = handle_adm_set_user_group_status(token.c_str(), request->user_id().c_str(),
+                                            request->group_id().c_str(), request->enabled(),
+                                            &reply_msg);
+    if (code == RESULT_OK) {
+      msg_debug(5, "%s: Set status", log_prefix);
+    } else {
+      msg_debug(5, "%s: Failed to set user-group status: code=%ld, user_id=%s, group_id=%s, enabled=%s\n",
+                log_prefix, static_cast<long>(code),
+                request->user_id().c_str(), request->group_id().c_str(),
+                request->enabled() ? "true" : "false");
+    }
+  } catch (...) {
+    msg_error("%s: An exception occurred while setting the status of a user-group association\n",
+              log_prefix);
   }
 
   try {

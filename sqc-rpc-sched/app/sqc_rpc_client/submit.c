@@ -9,7 +9,8 @@
 sqc_result_t
 rpc_submit_job(rpc_session_client_t *session, uint8_t priority, const char *qprogram,
                sqc_rpc_sched_circuit_fmt_t circuit_fmt, size_t shots, sqc_rpc_sched_qc_type_t qc_type,
-               sqc_rpc_sched_transpiler_t transpiler, const char *remark, const char *user_token,
+               sqc_rpc_sched_transpiler_t transpiler, const char *remark,
+               const char *user_token, const char *group_id,
                char **job_id) {
   sqc_result_t ret = SQC_RESULT_ANY_FAILURES;
   sqc_result_t request_result = SQC_RESULT_ANY_FAILURES;
@@ -19,7 +20,8 @@ rpc_submit_job(rpc_session_client_t *session, uint8_t priority, const char *qpro
   if (likely(session != NULL && *session != NULL && qprogram != NULL && remark != NULL &&
              job_id != NULL)) {
     request_result = rpc_session_client_submit_job(session, priority, qprogram, circuit_fmt, shots, qc_type,
-                                                   transpiler, remark, user_token, &code, &msg, job_id);
+                                                   transpiler, remark, user_token, group_id,
+                                                   &code, &msg, job_id);
     if (likely(request_result == SQC_RESULT_OK)) {
       ret = code;
     } else {
@@ -49,7 +51,8 @@ static inline sqc_result_t
 s_subcmd_submit(const char *server, bool prefer_ipv4, rpc_auth_method_t auth_method, const char *conf_dir,
                 uint8_t priority, const char *qprogram, sqc_rpc_sched_circuit_fmt_t circuit_fmt, size_t shots,
                 sqc_rpc_sched_qc_type_t qc_type, sqc_rpc_sched_transpiler_t transpiler,
-                const char *remark, const char *user_token, bool wait_completion, uint32_t sleep_interval) {
+                const char *remark, const char *user_token, const char *group_id,
+                bool wait_completion, uint32_t sleep_interval) {
   sqc_result_t ret = SQC_RESULT_ANY_FAILURES;
   sqc_result_t create_result = SQC_RESULT_ANY_FAILURES;
   sqc_result_t submit_result = SQC_RESULT_ANY_FAILURES;
@@ -63,7 +66,7 @@ s_subcmd_submit(const char *server, bool prefer_ipv4, rpc_auth_method_t auth_met
                                                             auth_method, conf_dir);
     if (likely(create_result == SQC_RESULT_OK)) {
       submit_result = rpc_submit_job(&session, priority, qprogram, circuit_fmt, shots, qc_type,
-                                     transpiler, remark, user_token, &job_id);
+                                     transpiler, remark, user_token, group_id, &job_id);
 
       if (likely(submit_result == SQC_RESULT_OK)) {
         if (wait_completion == true) {
@@ -131,11 +134,16 @@ s_print_help(void) {
   printf("\n");
 
   printf("Arguments:\n");
-  printf("  QC-TYPE                 priority of the job\n");
-  printf("                          rqc-rest, ibm-rest or slurm-rest\n");
+  printf("  QC-TYPE                 QC type of the job; one of:\n");
+  printf("                            rqc-rest, ibm-rest, slurm-rest,\n");
+  printf("                            qtm-grpc, qtm-sim-grpc, ibm-dacc,\n");
+  printf("                            dummy, a-oqtopusrest-system-token,\n");
+  printf("                            a-oqtopusrest-user-token,\n");
+  printf("                            a-oqtopusrest-both-token\n");
   printf("  PRIORITY                priority of the job\n");
   printf("  QPROGRAM                path to a program file\n");
-  printf("  FORMAT                  format type of QPROGRAM (qasm, qir or qpy)\n");
+  printf("  FORMAT                  format type of QPROGRAM; one of:\n");
+  printf("                            qasm, qir, qpy, json\n");
   printf("  SHOTS                   the number of shots\n");
 }
 
@@ -147,6 +155,7 @@ sqc_result_t
 subcmd_submit_main(int argc, char *argv[], int arg_index) {
   const char *server = getenv("SQC_RPC_SERVER");
   const char *user_token = getenv("SQC_RPC_USER_TOKEN");
+  const char *group_id = getenv("SQC_RPC_GROUP_ID");
   bool prefer_ipv4 = false;
   const char *conf_dir = default_conf_dir;
   rpc_auth_method_t auth_method = RPC_AUTH_METHOD_UNKNOWN;
@@ -256,10 +265,12 @@ subcmd_submit_main(int argc, char *argv[], int arg_index) {
   }
 
   printf("submit_job request: priority=%u, qprogram_file=%s, circuit_fmt=%d, shots=%zu, "
-         "qc_type=%d, transpiler=%d, remark=%s, user_token=%s\n",
-         priority, qprogram_file, circuit_fmt, shots, qc_type, transpiler, remark, user_token);
-  ret = s_subcmd_submit(server, prefer_ipv4, auth_method, conf_dir, priority, qprogram, circuit_fmt,
-                        shots, qc_type, transpiler, remark, user_token, wait_completion, sleep_interval);
+         "qc_type=%d, transpiler=%d, remark=%s, user_token=%s, group_id=%s\n",
+         priority, qprogram_file, circuit_fmt, shots, qc_type, transpiler,
+         remark, user_token, group_id);
+  ret = s_subcmd_submit(server, prefer_ipv4, auth_method, conf_dir,
+                        priority, qprogram, circuit_fmt, shots, qc_type, transpiler,
+                        remark, user_token, group_id, wait_completion, sleep_interval);
 
 end:
   free(qprogram);

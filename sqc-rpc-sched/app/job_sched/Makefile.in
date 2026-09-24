@@ -3,7 +3,7 @@ srcdir	=   @srcdir@
 VPATH	=   @srcdir@
 MKRULES_BUILDDIR	=	@MKRULES_BUILDDIR@
 
-TARGET_LIB              = $(APP_REQ_SCHED_LIB)
+TARGET_LIB              = $(APP_JOB_SCHED_LIB)
 INSTALL_LIB_TARGETS     = $(TARGET_LIB)
 INSTALL_LIB_DIR         = $(DEST_LIBDIR)
 
@@ -14,9 +14,10 @@ include $(MKRULES_BUILDDIR)/vars.mk
 CPPFLAGS	+=	-I$(APP_INC_BUILDDIR)
 CPPFLAGS	+=	-I$(APP_INC_SRCDIR)
 
+DEP_LIBS	+=	$(DEP_APP_SQC_RPC_COMMON_LIB)
 DEP_LIBS	+=	$(DEP_APP_DBMGR_LIB)
 DEP_LIBS	+=	$(DEP_APP_REQ_INVOKER_LIB)
 
-SRCS		=	req_sched.c
+SRCS		=	job_sched.c job_sched_scheduling_algo.c job_sched_fair_share.c
 
 include $(MKRULES_BUILDDIR)/rules.mk

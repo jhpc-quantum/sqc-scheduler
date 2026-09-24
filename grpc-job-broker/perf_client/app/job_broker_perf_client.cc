@@ -23,8 +23,8 @@ job_broker_perf_client::~job_broker_perf_client() {
 //
 grpc::Status
 job_broker_perf_client::submit_job(const std::string& qprorgram, ::circuit_fmt_t circuit_fmt, std::size_t shots,
-                                   ::qc_type_t qc_type, transpiler_t transpiler,
-                                   const std::string& remark, std::optional<std::string> user_token,
+                                   ::qc_type_t qc_type, transpiler_t transpiler, const std::string& remark,
+                                   std::optional<std::string> user_token, std::optional<std::string> group_id,
                                    std::uint32_t priority, ::submit_job_reply& reply) {
   submit_job_request request;
   request.set_token(token_);
@@ -38,6 +38,11 @@ job_broker_perf_client::submit_job(const std::string& qprorgram, ::circuit_fmt_t
     request.set_user_token(user_token.value());
   } else {
     request.clear_user_token();
+  }
+  if (group_id.has_value()) {
+    request.set_group_id(group_id.value());
+  } else {
+    request.clear_group_id();
   }
   request.set_priority(priority);
   grpc::ClientContext context;
