@@ -1,6 +1,6 @@
 #include "sqc_apis.h"
 #include "dbmgr.h"
-#include "req_sched.h"
+#include "job_sched.h"
 #include "rpc.pb-c.h"
 #include "rpc_file_util.h"
 #include "rpc_munge.h"
@@ -540,51 +540,6 @@ s_handle_auth_request(rpc_session_server_t *rpc_session, rpc_msg_id_t id, char *
 
 
 //
-// Request DB manager to submit a job.
-//
-static inline sqc_result_t
-s_submit_job(const char *user_id, uint8_t priority,
-             const char *qprogram, sqc_rpc_sched_circuit_fmt_t circuit_fmt, size_t shots,
-             sqc_rpc_sched_qc_type_t qc_type, sqc_rpc_sched_transpiler_t transpiler,
-             const char *remark, const char *user_token, char **job_id, char **reply_msg) {
-  sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
-  dbmgr_job_info_t ji_ptr = NULL;
-
-  if (likely(qc_type == sqc_rpc_sched_conf_get_qc_type())) {
-    rc = dbmgr_ji_create_job(user_id, priority, qprogram, circuit_fmt, shots,
-                             qc_type, transpiler, remark, user_token, &ji_ptr);
-    if (rc == SQC_RESULT_OK) {
-      rc = dbmgr_ji_get_job_id(ji_ptr, job_id);
-      if (rc == SQC_RESULT_OK) {
-        sqc_msg_debug(5, "Created the job: job_id=%s\n", *job_id);
-
-        rc = req_sched_enqueue(ji_ptr);
-        if (rc == SQC_RESULT_OK) {
-          sqc_msg_debug(5, "Enqueued the job: job_id=%s\n", *job_id);
-        } else {
-          rpc_create_message_text(reply_msg, "Failed to enqueue the job to scheduler, %s", sqc_error_get_string(rc));
-          rpc_log_debug_msg(5, *reply_msg);
-        }
-      } else {
-        rpc_create_message_text(reply_msg, "Failed to get a created job ID, %s", sqc_error_get_string(rc));
-        rpc_log_debug_msg(5, *reply_msg);
-      }
-    } else {
-      rpc_create_message_text(reply_msg, "Failed to create a job, job_id=%s", sqc_error_get_string(rc));
-      rpc_log_debug_msg(5, *reply_msg);
-    }
-  } else {
-    rc = SQC_RESULT_INVALID_ARGS;
-    rpc_create_message_text(reply_msg, "Unexpected qc-type %d(%s)",
-                            (int)qc_type, sqc_rpc_sched_qc_type_to_string(qc_type));
-    rpc_log_error_msg(*reply_msg);
-  }
-
-  return rc;
-}
-
-
-//
 // Handle an 'submit_job_request' message.
 //
 // The function processes the received request and builds a reply message.
@@ -609,9 +564,16 @@ s_handle_submit_job_request(rpc_session_server_t *rpc_session, rpc_msg_id_t id, 
 
     if (likely(request != NULL &&
                RPC_VALIDATE_PROTOC_BYTES(&request->qprogram) == true &&
-               RPC_VALIDATE_PROTOC_BYTES(&request->remark) == true)) {
+               RPC_VALIDATE_PROTOC_BYTES(&request->remark) == true &&
+               (!request->has_group_id || RPC_VALIDATE_PROTOC_BYTES(&request->group_id) == true) &&
+               (!request->has_user_token || RPC_VALIDATE_PROTOC_BYTES(&request->user_token) == true))) {
+      const char *group_id = (request->has_group_id == true)
+                           ? (const char *) request->group_id.data
+                           : SQC_RPC_SCHED_DEFAULT_GROUP_ID;
+
       sqc_msg_info("RPC-%s: Received a request: priority=%u, qprogram_len=%d, circuit_fmt=%d(%s), "
-                   "shots=%zu, qc_type=%d(%s), transpiler=%d(%s), remark=%s, has_user_token=%s\n",
+                   "shots=%zu, qc_type=%d(%s), transpiler=%d(%s), remark=%s, "
+                   "has_user_token=%s, group_id=%s\n",
                    rpc_message_name_string(id),
                    (unsigned int) request->priority,
                    (int) (&request->qprogram)->len,
@@ -622,18 +584,20 @@ s_handle_submit_job_request(rpc_session_server_t *rpc_session, rpc_msg_id_t id, 
                    sqc_rpc_sched_qc_type_to_string((sqc_rpc_sched_qc_type_t)request->qc_type),
                    (int) request->transpiler,
                    sqc_rpc_sched_transpiler_to_string((sqc_rpc_sched_transpiler_t)request->transpiler),
-                   (char *) request->remark.data, request->has_user_token ? "true" : "false");
+                   (char *) request->remark.data, request->has_user_token ? "true" : "false", group_id);
 
       get_user_result = s_get_session_user(rpc_session, &session_user_name, &is_user_enabled, NULL);
       if (likely(get_user_result == SQC_RESULT_OK)) {
         if (likely(is_user_enabled)) {
-          reply_code = s_submit_job(session_user_name, (uint8_t) request->priority,
-                                    (char *) request->qprogram.data,
-                                    (sqc_rpc_sched_circuit_fmt_t) request->circuit_fmt, (size_t) request->shots,
-                                    (sqc_rpc_sched_qc_type_t) request->qc_type,
-                                    (sqc_rpc_sched_transpiler_t) request->transpiler,
-                                    (char *) request->remark.data, (char *) request->user_token.data,
-                                    &job_id, &reply_msg);
+          reply_code = job_sched_submit_job(session_user_name, group_id, (uint8_t) request->priority,
+                                            (char *) request->qprogram.data,
+                                            (sqc_rpc_sched_circuit_fmt_t) request->circuit_fmt,
+                                            (size_t) request->shots,
+                                            (sqc_rpc_sched_qc_type_t) request->qc_type,
+                                            (sqc_rpc_sched_transpiler_t) request->transpiler,
+                                            (char *) request->remark.data,
+                                            (char *) request->user_token.data,
+                                            &job_id, &reply_msg);
           if (likely(reply_code == SQC_RESULT_OK)) {
             sqc_msg_info("RPC-%s: Submitted: job_id=%s\n", rpc_message_name_string(id), job_id);
           } else {
@@ -646,6 +610,7 @@ s_handle_submit_job_request(rpc_session_server_t *rpc_session, rpc_msg_id_t id, 
           rpc_log_error_msg_with_name(id, reply_msg);
         }
       } else {
+        reply_code = get_user_result;
         rpc_create_message_text(&reply_msg, "Failed to get a user name of the session, %s",
                                 sqc_error_get_string(get_user_result));
         rpc_log_error_msg_with_name(id, reply_msg);
@@ -988,8 +953,8 @@ s_handle_cancel_job_request(rpc_session_server_t *rpc_session, rpc_msg_id_t id, 
                    rpc_message_name_string(id),
                    (char *) request->job_id.data);
       get_user_result = s_get_session_user(rpc_session, &session_user_name, &is_user_enabled, NULL);
-      if (likely(is_user_enabled)) {
-        if (likely(get_user_result == SQC_RESULT_OK)) {
+      if (likely(get_user_result == SQC_RESULT_OK)) {
+        if (likely(is_user_enabled)) {
           reply_code = s_cancel_job(session_user_name, (char *) request->job_id.data, &reply_msg);
           if (likely(reply_code == SQC_RESULT_OK)) {
             sqc_msg_info("RPC-%s: Cancelled: job_id=%s\n",
@@ -1454,6 +1419,7 @@ s_adm_add_user(const char *user_id, char **reply_msg) {
   // Add the specified user.
   do {
     dbmgr_user_info_t user_info = NULL;
+    dbmgr_group_info_t group_info = NULL;
     rc = dbmgr_ui_user_find(user_id, &user_info);
     if (rc == SQC_RESULT_OK) {
       rc = SQC_RESULT_ALREADY_EXISTS;
@@ -1472,6 +1438,24 @@ s_adm_add_user(const char *user_id, char **reply_msg) {
     if (rc != SQC_RESULT_OK) {
       rpc_create_message_text(reply_msg, "Failed to add the user, %s: user=%s",
                               sqc_error_get_string(rc), user_id);
+      rpc_log_debug_msg(5, *reply_msg);
+      break;
+    }
+
+    rc = dbmgr_gi_group_find(SQC_RPC_SCHED_DEFAULT_GROUP_ID, &group_info);
+    if (rc != SQC_RESULT_OK) {
+      rpc_create_message_text(reply_msg,
+                              "Failed to add the user to the default group, %s: user=%s, group_id=%s",
+                              sqc_error_get_string(rc), user_id, SQC_RPC_SCHED_DEFAULT_GROUP_ID);
+      rpc_log_debug_msg(5, *reply_msg);
+      break;
+    }
+
+    rc = dbmgr_ugi_add_user_to_group(user_id, SQC_RPC_SCHED_DEFAULT_GROUP_ID);
+    if (rc != SQC_RESULT_OK) {
+      rpc_create_message_text(reply_msg,
+                              "Failed to add the user to the default group, %s: user=%s, group_id=%s",
+                              sqc_error_get_string(rc), user_id, SQC_RPC_SCHED_DEFAULT_GROUP_ID);
       rpc_log_debug_msg(5, *reply_msg);
       break;
     }
@@ -1745,6 +1729,361 @@ s_handle_adm_set_user_status_request(rpc_session_server_t *rpc_session, rpc_msg_
 
 
 //
+// Set exec_time_limit.
+//
+static inline sqc_result_t
+s_adm_set_group_exec_time_limit(const char *group_id, uint64_t exec_time_limit,
+                                char **reply_msg) {
+  sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
+    dbmgr_group_info_t group_info = NULL;
+
+  // Check arguments.
+  if (group_id == NULL || *group_id == '\0' || strcmp(group_id, all_users) == 0) {
+    rc = SQC_RESULT_INVALID_ARGS;
+    rpc_create_message_text(reply_msg, "Failed to set group exec_time_limit, %s", sqc_error_get_string(rc));
+    rpc_log_debug_msg(5, *reply_msg);
+    return rc;
+  }
+
+  // Set the specified group.
+  do {
+    if (exec_time_limit > (uint64_t) INT64_MAX / SQC_RPC_SCHED_EXEC_TIME_LIMIT_HOUR_SCALE) {
+      rpc_create_message_text(reply_msg, "Executable time limit is too large: group_id=%s", group_id);
+      rpc_log_debug_msg(5, *reply_msg);
+      rc = SQC_RESULT_INVALID_ARGS;
+      break;
+    }
+
+    rc = dbmgr_gi_group_find(group_id, &group_info);
+    if (rc != SQC_RESULT_OK) {
+      rpc_create_message_text(reply_msg, "Failed to set exec_time_limit of the group, %s: group_id=%s",
+                              sqc_error_get_string(rc), group_id);
+      rpc_log_debug_msg(5, *reply_msg);
+      break;
+    }
+
+    rc = dbmgr_gi_set_exec_time_limit_msec(group_info,
+                                           (exec_time_limit * SQC_RPC_SCHED_EXEC_TIME_LIMIT_HOUR_SCALE));
+    if (rc != SQC_RESULT_OK) {
+      rpc_create_message_text(reply_msg, "Failed to set exec_time_limit of the group, %s: user=%s",
+                              sqc_error_get_string(rc), group_id);
+      rpc_log_debug_msg(5, *reply_msg);
+      break;
+    }
+
+    rc = SQC_RESULT_OK;
+  } while (0);
+
+  return rc;
+}
+
+
+//
+// Handle a 'adm_set_group_exec_time_limit_request' message.
+//
+// The function processes the received request and builds a reply message.
+//
+static inline sqc_result_t
+s_handle_adm_set_group_exec_time_limit_request(rpc_session_server_t *rpc_session, rpc_msg_id_t id, char *body,
+                                               size_t len, rpc_msg_id_t *reply_id, char **reply_body,
+                                               size_t *reply_len, rpc_request_handler_flags_t *reply_flags) {
+  sqc_result_t ret = SQC_RESULT_ANY_FAILURES;
+  sqc_result_t reply_code = SQC_RESULT_ANY_FAILURES;
+  char *reply_msg = NULL;
+  AdmSetGroupExecTimeLimitRequest *request = NULL;
+  char *session_user_name = NULL;
+  bool is_user_enabled = false;
+  bool is_user_admin = false;
+
+  // Check arguments.
+  if (rpc_session == NULL || *rpc_session == NULL || body == NULL || reply_id == NULL ||
+      reply_body == NULL || reply_len == NULL || reply_flags == NULL) {
+    ret = SQC_RESULT_INVALID_ARGS;
+    rpc_create_message_text(&reply_msg, "Received a request with invalid arguments");
+    rpc_log_error_msg_with_name(id, reply_msg);
+    return ret;
+  }
+
+  // Unpack and validate the request message.
+  do {
+    request = adm_set_group_exec_time_limit_request__unpack(NULL, len, (uint8_t *) body);
+    if (request == NULL || !RPC_VALIDATE_PROTOC_BYTES(&request->group_id)) {
+      ret = SQC_RESULT_INVALID_ARGS;
+      rpc_create_message_text(&reply_msg, "Failed to handle a request, %s", sqc_error_get_string(ret));
+      rpc_log_error_msg_with_name(id, reply_msg);
+      break;
+    }
+
+    sqc_msg_info("RPC-%s: Received a request: group_id=%s, exec_time_limit=%ld\n",
+                 rpc_message_name_string(id), (char *) request->group_id.data,
+                 request->exec_time_limit);
+
+    ret = s_get_session_user(rpc_session, &session_user_name, &is_user_enabled, &is_user_admin);
+    if (ret != SQC_RESULT_OK) {
+      reply_code = ret;
+      ret = SQC_RESULT_OK;
+      rpc_create_message_text(&reply_msg, "Failed to get a user name of the session, %s",
+                              sqc_error_get_string(reply_code));
+      rpc_log_error_msg_with_name(id, reply_msg);
+      break;
+    } else if (!is_user_admin) {
+      reply_code = SQC_RESULT_NOT_ADMIN_USER;
+      ret = SQC_RESULT_OK;
+      rpc_create_message_text(&reply_msg, "Requested by the non-administrator user: user=%s",
+                              session_user_name);
+      rpc_log_error_msg_with_name(id, reply_msg);
+      break;
+    } else if (!is_user_enabled) {
+      reply_code = SQC_RESULT_DISABLED_USER;
+      ret = SQC_RESULT_OK;
+      rpc_create_message_text(&reply_msg, "Requested by the disabled user: user=%s",
+                              session_user_name);
+      rpc_log_error_msg_with_name(id, reply_msg);
+      break;
+    }
+
+    ret = s_adm_set_group_exec_time_limit((char *)request->group_id.data,
+                                          request->exec_time_limit, &reply_msg);
+    if (ret == SQC_RESULT_OK) {
+      reply_code = ret;
+      ret = SQC_RESULT_OK;
+      rpc_create_message_text(&reply_msg, "Set status: group_id=%s, exec_time_limit=%ld",
+                              (char *) request->group_id.data, request->exec_time_limit);
+      rpc_log_info_msg_with_name(id, reply_msg);
+      break;
+    } else {
+      reply_code = ret;
+      ret = SQC_RESULT_OK;
+      rpc_log_error_msg_with_name(id, reply_msg);
+      break;
+    }
+  } while (0);
+
+  // Create a reply message if no serious error has occurred.
+  do {
+    if (ret != SQC_RESULT_OK) {
+      break;
+    }
+
+    ret = rpc_pack_adm_set_group_exec_time_limit_reply(reply_code, reply_msg,
+                                                       reply_body, reply_len);
+    if (ret != SQC_RESULT_OK) {
+      sqc_msg_error("RPC-%s: Failed to construct a reply, %s\n",
+                    rpc_message_name_string(id), sqc_error_get_string(ret));
+      break;
+    }
+
+    *reply_id = RPC_MSG_ADM_SET_GROUP_EXEC_TIME_LIMIT_REPLY;
+    *reply_flags = 0u;
+    sqc_msg_info("RPC-%s: Send a reply: code=%d(%s), message=%s\n",
+                 rpc_message_name_string(id),
+                 (int) reply_code, sqc_error_get_string(reply_code), reply_msg);
+    ret = SQC_RESULT_OK;
+  } while (0);
+
+  free(reply_msg);
+  free(session_user_name);
+  adm_set_group_exec_time_limit_request__free_unpacked(request, NULL);
+  return ret;
+}
+
+
+//
+// Set user-group association status.
+//
+static inline sqc_result_t
+s_adm_set_user_group_status(const char *user_id, const char *group_id, bool enabled,
+                            char **reply_msg) {
+  sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
+  dbmgr_user_info_t user_info = NULL;
+  dbmgr_group_info_t group_info = NULL;
+  dbmgr_user_group_info_t user_group_info = NULL;
+
+  // Check arguments.
+  if (user_id == NULL || *user_id == '\0' || group_id == NULL || *group_id == '\0' ||
+      strcmp(user_id, all_users) == 0) {
+    rc = SQC_RESULT_INVALID_ARGS;
+    rpc_create_message_text(reply_msg, "Failed to set user-group status, %s", sqc_error_get_string(rc));
+    rpc_log_debug_msg(5, *reply_msg);
+    return rc;
+  }
+
+  // Set the specified user-group association.
+  do {
+    rc = dbmgr_ui_user_find(user_id, &user_info);
+    if (rc != SQC_RESULT_OK) {
+      rpc_create_message_text(reply_msg, "Failed to set user-group status, %s: user_id=%s, group_id=%s",
+                              sqc_error_get_string(rc), user_id, group_id);
+      rpc_log_debug_msg(5, *reply_msg);
+      break;
+    }
+
+    rc = dbmgr_gi_group_find(group_id, &group_info);
+    if (rc != SQC_RESULT_OK) {
+      rpc_create_message_text(reply_msg, "Failed to set user-group status, %s: user_id=%s, group_id=%s",
+                              sqc_error_get_string(rc), user_id, group_id);
+      rpc_log_debug_msg(5, *reply_msg);
+      break;
+    }
+
+    rc = dbmgr_ugi_user_find(user_id, group_id, &user_group_info);
+    if (rc == SQC_RESULT_NOT_FOUND) {
+      if (!enabled) {
+        rpc_create_message_text(reply_msg, "Failed to set user-group status, %s: user_id=%s, group_id=%s",
+                                sqc_error_get_string(rc), user_id, group_id);
+        rpc_log_debug_msg(5, *reply_msg);
+        break;
+      }
+
+      rc = dbmgr_ugi_add_user_to_group(user_id, group_id);
+      if (rc != SQC_RESULT_OK) {
+        rpc_create_message_text(reply_msg, "Failed to set user-group status, %s: user_id=%s, group_id=%s",
+                                sqc_error_get_string(rc), user_id, group_id);
+        rpc_log_debug_msg(5, *reply_msg);
+        break;
+      }
+
+      rc = SQC_RESULT_OK;
+      break;
+    } else if (rc != SQC_RESULT_OK) {
+      rpc_create_message_text(reply_msg, "Failed to set user-group status, %s: user_id=%s, group=_id%s",
+                              sqc_error_get_string(rc), user_id, group_id);
+      rpc_log_debug_msg(5, *reply_msg);
+      break;
+    }
+
+    if (enabled) {
+      rc = dbmgr_ugi_set_user_group_enabled(user_group_info);
+    } else {
+      rc = dbmgr_ugi_set_user_group_disabled(user_group_info);
+    }
+
+    if (rc != SQC_RESULT_OK) {
+      rpc_create_message_text(reply_msg, "Failed to set user-group status, %s: user=_id%s, group=_id%s",
+                              sqc_error_get_string(rc), user_id, group_id);
+      rpc_log_debug_msg(5, *reply_msg);
+      break;
+    }
+
+    rc = SQC_RESULT_OK;
+  } while (0);
+
+  return rc;
+}
+
+
+//
+// Handle a 'adm_set_user_group_status_request' message.
+//
+// The function processes the received request and builds a reply message.
+//
+static inline sqc_result_t
+s_handle_adm_set_user_group_status_request(rpc_session_server_t *rpc_session, rpc_msg_id_t id, char *body,
+                                           size_t len, rpc_msg_id_t *reply_id, char **reply_body,
+                                           size_t *reply_len, rpc_request_handler_flags_t *reply_flags) {
+  sqc_result_t ret = SQC_RESULT_ANY_FAILURES;
+  sqc_result_t reply_code = SQC_RESULT_ANY_FAILURES;
+  char *reply_msg = NULL;
+  AdmSetUserGroupStatusRequest *request = NULL;
+  char *session_user_name = NULL;
+  bool is_user_enabled = false;
+  bool is_user_admin = false;
+
+  // Check arguments.
+  if (rpc_session == NULL || *rpc_session == NULL || body == NULL || reply_id == NULL ||
+      reply_body == NULL || reply_len == NULL || reply_flags == NULL) {
+    ret = SQC_RESULT_INVALID_ARGS;
+    rpc_create_message_text(&reply_msg, "Received a request with invalid arguments");
+    rpc_log_error_msg_with_name(id, reply_msg);
+    return ret;
+  }
+
+  // Unpack and validate the request message.
+  do {
+    request = adm_set_user_group_status_request__unpack(NULL, len, (uint8_t *) body);
+    if (request == NULL || !RPC_VALIDATE_PROTOC_BYTES(&request->user_id) ||
+        !RPC_VALIDATE_PROTOC_BYTES(&request->group_id)) {
+      ret = SQC_RESULT_INVALID_ARGS;
+      rpc_create_message_text(&reply_msg, "Failed to handle a request, %s", sqc_error_get_string(ret));
+      rpc_log_error_msg_with_name(id, reply_msg);
+      break;
+    }
+
+    sqc_msg_info("RPC-%s: Received a request: user_id=%s, group_id=%s, status=%s\n",
+                 rpc_message_name_string(id), (char *) request->user_id.data,
+                 (char *) request->group_id.data, request->enabled ? "enable" : "disable");
+
+    ret = s_get_session_user(rpc_session, &session_user_name, &is_user_enabled, &is_user_admin);
+    if (ret != SQC_RESULT_OK) {
+      reply_code = ret;
+      ret = SQC_RESULT_OK;
+      rpc_create_message_text(&reply_msg, "Failed to get a user name of the session, %s",
+                              sqc_error_get_string(reply_code));
+      rpc_log_error_msg_with_name(id, reply_msg);
+      break;
+    } else if (!is_user_admin) {
+      reply_code = SQC_RESULT_NOT_ADMIN_USER;
+      ret = SQC_RESULT_OK;
+      rpc_create_message_text(&reply_msg, "Requested by the non-administrator user: user=%s",
+                              session_user_name);
+      rpc_log_error_msg_with_name(id, reply_msg);
+      break;
+    } else if (!is_user_enabled) {
+      reply_code = SQC_RESULT_DISABLED_USER;
+      ret = SQC_RESULT_OK;
+      rpc_create_message_text(&reply_msg, "Requested by the disabled user: user=%s",
+                              session_user_name);
+      rpc_log_error_msg_with_name(id, reply_msg);
+      break;
+    }
+
+    ret = s_adm_set_user_group_status((char *) request->user_id.data, (char *) request->group_id.data,
+                                      request->enabled, &reply_msg);
+    if (ret == SQC_RESULT_OK) {
+      reply_code = ret;
+      ret = SQC_RESULT_OK;
+      rpc_create_message_text(&reply_msg, "Set status: user_id=%s, group_id=%s, status=%s",
+                              (char *) request->user_id.data, (char *) request->group_id.data,
+                              request->enabled ? "enable" : "disable");
+      rpc_log_info_msg_with_name(id, reply_msg);
+      break;
+    } else {
+      reply_code = ret;
+      ret = SQC_RESULT_OK;
+      rpc_log_error_msg_with_name(id, reply_msg);
+      break;
+    }
+  } while (0);
+
+  // Create a reply message if no serious error has occurred.
+  do {
+    if (ret != SQC_RESULT_OK) {
+      break;
+    }
+
+    ret = rpc_pack_adm_set_user_group_status_reply(reply_code, reply_msg, reply_body, reply_len);
+    if (ret != SQC_RESULT_OK) {
+      sqc_msg_error("RPC-%s: Failed to construct a reply, %s\n",
+                    rpc_message_name_string(id), sqc_error_get_string(ret));
+      break;
+    }
+
+    *reply_id = RPC_MSG_ADM_SET_USER_GROUP_STATUS_REPLY;
+    *reply_flags = 0u;
+    sqc_msg_info("RPC-%s: Send a reply: code=%d(%s), message=%s\n",
+                 rpc_message_name_string(id),
+                 (int) reply_code, sqc_error_get_string(reply_code), reply_msg);
+    ret = SQC_RESULT_OK;
+  } while (0);
+
+  free(reply_msg);
+  free(session_user_name);
+  adm_set_user_group_status_request__free_unpacked(request, NULL);
+  return ret;
+}
+
+
+//
 // Dispatch the received message to a handler.
 //
 static inline sqc_result_t
@@ -1805,6 +2144,16 @@ s_dispatch_request(rpc_session_server_t *rpc_session, rpc_msg_id_t id, char *bod
       ret = s_handle_adm_set_user_status_request(rpc_session, id, body, len, reply_id, reply_body,
                                                  reply_len, reply_flags);
        break;
+    }
+    case RPC_MSG_ADM_SET_GROUP_EXEC_TIME_LIMIT_REQUEST: {
+      ret = s_handle_adm_set_group_exec_time_limit_request(rpc_session, id, body, len, reply_id, reply_body,
+                                                           reply_len, reply_flags);
+      break;
+    }
+    case RPC_MSG_ADM_SET_USER_GROUP_STATUS_REQUEST: {
+      ret = s_handle_adm_set_user_group_status_request(rpc_session, id, body, len, reply_id, reply_body,
+                                                       reply_len, reply_flags);
+      break;
     }
     default: {
       sqc_msg_debug(5, "RPC Session: Invalid request from client, msg_id=%u\n", (unsigned int) id);

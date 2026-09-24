@@ -71,6 +71,7 @@ message submit_job_request {
   required transpiler_t transpiler = 6;
   required bytes remark = 7;
   optional bytes user_token = 8;
+  optional bytes group_id = 9;
 }
 
 message submit_job_reply {
@@ -168,6 +169,23 @@ message adm_add_user_request {
 message adm_set_user_status_request {
   required bytes user_id = 1;
   required bool enabled = 2;
+};
+
+// ADM_SET_GROUP_EXEC_TIME_LIMIT request.
+// Its reply is 'basic_reply'.
+message adm_set_group_exec_time_limit_request {
+  required bytes group_id = 1;
+  required uint64 exec_time_limit = 2;
+};
+
+//
+// ADM_SET_USER_GROUP_STATUS request.
+// Its reply is 'basic_reply'.
+//
+message adm_set_user_group_status_request {
+  required bytes user_id = 1;
+  required bytes group_id = 2;
+  required bool enabled = 3;
 };
 
 //

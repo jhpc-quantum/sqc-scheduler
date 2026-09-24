@@ -51,6 +51,16 @@ class job_broker_service_impl final : public ::job_broker::Service {
   adm_set_user_status(grpc::ServerContext* context, const adm_set_user_status_request* request,
                       adm_set_user_status_reply* reply) override;
 
+  // handler for 'adm_set_user_status' request.
+  grpc::Status adm_set_group_exec_time_limit(grpc::ServerContext *context,
+                                             const adm_set_group_exec_time_limit_request *request,
+                                             adm_set_group_exec_time_limit_reply *reply) override;
+
+  // handler for 'adm_set_user_group_status' request.
+  grpc::Status adm_set_user_group_status(grpc::ServerContext *context,
+                                         const adm_set_user_group_status_request *request,
+                                         adm_set_user_group_status_reply *reply) override;
+
   // Parses a <std::string> instance of an user ID and converts it into <char*>.
   bool
   s_parse_user_id(const std::string& id_string, char* id_c_ptr, std::size_t c_ptr_size);

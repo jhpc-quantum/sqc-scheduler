@@ -8,7 +8,7 @@ include $(MKRULES_BUILDDIR)/vars.mk
 UT_CPPFLAGS	=	-I$(APP_INC_SRCDIR) -I$(APP_REQ_INVOKER_SRCDIR) -I$(REXAPIS_INCDIR)
 UT_CFLAGS	=	-Wno-format-zero-length -Wno-format-extra-args
 UT_CXXFLAGS	=	-Wno-format-zero-length -Wno-format-extra-args
-UT_DEP_LIBS	=	$(DEP_SQC_UTIL_LIB) $(DEP_APP_DBMGR_LIB) $(REXAPIS_LIBS)
+UT_DEP_LIBS	=	$(DEP_SQC_UTIL_LIB) $(DEP_APP_SQC_RPC_COMMON_LIB) $(DEP_APP_DBMGR_LIB) $(REXAPIS_LIBS)
 
 LDFLAGS		+=
 

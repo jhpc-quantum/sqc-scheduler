@@ -36,6 +36,8 @@ add_executable(grpc_client
   app_adm_del_jobs.cc
   app_adm_add_user.cc
   app_adm_set_user_status.cc
+  app_adm_set_group_exec_time_limit.cc
+  app_adm_set_user_group_status.cc
   app_cancel.cc
   app_common.cc
   app_delete.cc

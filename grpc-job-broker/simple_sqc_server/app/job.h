@@ -39,16 +39,18 @@ public:
   ///
   /// ID will be assigned automatically.  It sets `qc_job_id` to empty and sets status to `Created`.
   ///
-  Job(const std::string& user_id, std::uint32_t priority, const std::string& qprogram, int circuit_fmt,
-      std::size_t shots, int qc_type, int transpiler, const std::string& remark, std::optional<std::string> user_token);
+  Job(const std::string& user_id, const std::string& group_id, std::uint32_t priority,
+      const std::string& qprogram, int circuit_fmt, std::size_t shots, int qc_type,
+      int transpiler, const std::string& remark, std::optional<std::string> user_token);
 
   ///
   /// Constructor.
   ///
   /// It sets all data members in an instance by the given arguments.
   ///
-  Job(const std::string& user_id, std::uint32_t priority, const std::string& qprogram, int circuit_fmt,
-      std::size_t shots, int qc_type, int transpiler, const std::string& remark, std::optional<std::string> user_token,
+  Job(const std::string& user_id, const std::string& group_id, std::uint32_t priority,
+      const std::string& qprogram, int circuit_fmt, std::size_t shots, int qc_type,
+      int transpiler, const std::string& remark, std::optional<std::string> user_token,
       const std::string& id, const std::string& qc_job_id, JobStatus status);
 
   ///
@@ -67,6 +69,7 @@ public:
   Job& operator=(const Job& other) = default;
 
   inline const std::string& user_id() const noexcept { return user_id_; }
+  inline const std::string& group_id() const noexcept { return group_id_; }
   inline std::uint32_t priority() const noexcept { return priority_; }
   inline const std::string& qprogram() const noexcept { return qprogram_; }
   inline int circuit_fmt() const noexcept { return circuit_fmt_; }
@@ -83,6 +86,7 @@ public:
 
 private:
   std::string user_id_;
+  std::string group_id_;
   std::uint32_t priority_;
   std::string qprogram_;
   int circuit_fmt_;

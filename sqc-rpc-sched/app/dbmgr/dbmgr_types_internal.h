@@ -21,6 +21,37 @@ typedef struct dbmgr_user_info_record {
   sqc_chrono_t update_time;
 } dbmgr_user_info_record;
 
+typedef struct dbmgr_group_info_record {
+  sqc_rwlock_t rwlck_;
+
+  char group_id[SQC_RPC_SCHED_GROUP_ID_MAX_SIZE + 1];
+  size_t group_id_len;
+
+  uint64_t exec_time_limit_msec;
+  uint64_t exec_time_total_msec;
+
+  sqc_chrono_t created_time;
+  sqc_chrono_t update_time;
+} dbmgr_group_info_record;
+
+typedef struct dbmgr_user_group_info_record {
+  sqc_rwlock_t rwlck_;
+
+  char user_group_key[SQC_RPC_SCHED_USER_GROUP_KEY_MAX_SIZE + 1];
+  size_t user_group_key_len;
+
+  char user_id[SQC_RPC_SCHED_USER_ID_MAX_SIZE + 1];
+  size_t user_id_len;
+
+  char group_id[SQC_RPC_SCHED_GROUP_ID_MAX_SIZE + 1];
+  size_t group_id_len;
+
+  sqc_rpc_sched_user_group_status_t status;
+
+  sqc_chrono_t created_time;
+  sqc_chrono_t update_time;
+} dbmgr_user_group_info_record;
+
 typedef struct dbmgr_job_info_record {
   sqc_rwlock_t rwlck_;
 
@@ -29,6 +60,9 @@ typedef struct dbmgr_job_info_record {
 
   char user_id[SQC_RPC_SCHED_USER_ID_MAX_SIZE + 1];
   size_t user_id_len;
+
+  char group_id[SQC_RPC_SCHED_GROUP_ID_MAX_SIZE + 1];
+  size_t group_id_len;
 
   uint8_t priority;
 
@@ -57,6 +91,9 @@ typedef struct dbmgr_job_info_record {
   char user_token[SQC_RPC_SCHED_USER_TOKEN_MAX_SIZE + 1];
   size_t user_token_len;
 
+  uint64_t exec_time_estimate_msec;
+  uint64_t exec_time_msec;
+
   sqc_chrono_t created_time;
   sqc_chrono_t queued_time;
   sqc_chrono_t running_time;
@@ -66,6 +103,16 @@ typedef struct dbmgr_job_info_record {
   sqc_chrono_t deleted_time;
   sqc_chrono_t update_time;
 } dbmgr_job_info_record;
+
+typedef struct dbmgr_weight_info_record {
+  sqc_rwlock_t rwlck_;
+
+  uint8_t priority;
+  uint64_t weight;
+
+  sqc_chrono_t created_time;
+  sqc_chrono_t update_time;
+} dbmgr_weight_info_record;
 
 __END_DECLS
 

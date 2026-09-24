@@ -12,8 +12,8 @@ INSTALL_LIB_DIR         = $(DEST_LIBDIR)
 TARGETS					= $(TARGET_LIB_CXX)
 
 SRCS					= rpc.pb-c.c rpc_auth_method.c rpc_file_util.c rpc_job_info.c \
-                          rpc_jwt_client.cpp rpc_jwt_server.cpp rpc_msg_util.c rpc_munge.c \
-						  rpc_session_client.c rpc_session_internal.c rpc_session_server.c
+						rpc_jwt_client.cpp rpc_jwt_server.cpp rpc_msg_util.c rpc_munge.c \
+						rpc_session_client.c rpc_session_internal.c rpc_session_server.c
 
 include $(MKRULES_BUILDDIR)/vars.mk
 
@@ -24,7 +24,7 @@ CPPFLAGS		+=		$(MUNGE_CFLAGS)
 CPPFLAGS		+=		$(JWT_CPP_CPPFLAGS)
 
 DEP_LIBS		+=		$(DEP_APP_DBMGR_LIB)
-DEP_LIBS		+=		$(DEP_APP_REQ_SCHED_LIB)
+DEP_LIBS		+=		$(DEP_APP_JOB_SCHED_LIB)
 DEP_LIBS		+=		$(PROTOBUF_C_LIBS)
 DEP_LIBS		+=		$(MUNGE_LIBS)
 DEP_LIBS		+=		$(JWT_CPP_LIBS)

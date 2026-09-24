@@ -41,21 +41,27 @@ s_dbmgr_job_info_record_unlock(dbmgr_job_info_t ji_ptr) {
 
 
 static inline sqc_result_t
-s_dbmgr_job_info_record_create(const char *user_id, const uint8_t priority,
+s_dbmgr_job_info_record_create(const char *user_id, const char *group_id, const uint8_t priority,
                                const char *qprogram, sqc_rpc_sched_circuit_fmt_t circuit_fmt, size_t shots,
                                sqc_rpc_sched_qc_type_t qc_type, sqc_rpc_sched_transpiler_t transpiler,
                                const char *remark, const char *user_token, dbmgr_job_info_t *ji_ptr) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   uuid_t job_id;
-  size_t user_id_len, qprogram_len, remark_len, user_token_len;
+  size_t user_id_len, group_id_len, qprogram_len, remark_len, user_token_len;
 
   if (likely(ji_ptr != NULL &&
              user_id != NULL && IS_VALID_STRING(user_id) == true &&
+             group_id != NULL && IS_VALID_STRING(group_id) == true &&
              priority <= SQC_RPC_SCHED_MAX_PRIORITY &&
              qprogram != NULL && IS_VALID_STRING(qprogram) == true &&
              remark != NULL && IS_VALID_STRING(remark) == true)) {
     user_id_len = strlen(user_id);
     if (user_id_len > (SQC_RPC_SCHED_USER_ID_MAX_SIZE)) {
+      return SQC_RESULT_TOO_LONG;
+    }
+
+    group_id_len = strlen(group_id);
+    if (group_id_len > (SQC_RPC_SCHED_GROUP_ID_MAX_SIZE)) {
       return SQC_RESULT_TOO_LONG;
     }
 
@@ -95,6 +101,10 @@ s_dbmgr_job_info_record_create(const char *user_id, const uint8_t priority,
       (*ji_ptr)->user_id[user_id_len] = '\0';
       (*ji_ptr)->user_id_len = user_id_len;
 
+      memcpy((*ji_ptr)->group_id, group_id, group_id_len);
+      (*ji_ptr)->group_id[group_id_len] = '\0';
+      (*ji_ptr)->group_id_len = group_id_len;
+
       (*ji_ptr)->priority = priority;
 
       (*ji_ptr)->status = SQC_RPC_SCHED_JOB_STATUS_CREATED;
@@ -120,6 +130,9 @@ s_dbmgr_job_info_record_create(const char *user_id, const uint8_t priority,
 
       (*ji_ptr)->result[0] = '\0';
       (*ji_ptr)->result_len = 0;
+
+      (*ji_ptr)->exec_time_estimate_msec = 0;
+      (*ji_ptr)->exec_time_msec = 0;
 
       if (user_token_len > 0) {
         memcpy((*ji_ptr)->user_token, user_token, user_token_len);
@@ -814,12 +827,12 @@ s_dbmgr_job_info_arr_clear_result(dbmgr_job_info_t *ji_ptr_arr, const size_t arr
 
 
 sqc_result_t
-dbmgr_ji_create_job(const char *user_id, const uint8_t priority,
+dbmgr_ji_create_job(const char *user_id, const char *group_id, const uint8_t priority,
                     const char *qprogram, sqc_rpc_sched_circuit_fmt_t circuit_fmt, size_t shots,
                     sqc_rpc_sched_qc_type_t qc_type, sqc_rpc_sched_transpiler_t transpiler,
                     const char *remark, const char *user_token, dbmgr_job_info_t *ji_ptr) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
-  rc = s_dbmgr_job_info_record_create(user_id, priority,
+  rc = s_dbmgr_job_info_record_create(user_id, group_id, priority,
                                       qprogram, circuit_fmt, shots,
                                       qc_type, transpiler,
                                       remark, user_token, ji_ptr);
@@ -827,7 +840,7 @@ dbmgr_ji_create_job(const char *user_id, const uint8_t priority,
     rc = s_dbmgr_job_info_record_add(*ji_ptr);
     if (rc == SQC_RESULT_OK) {
       // do not add user_token to the database
-      rc = dbmgr_db_job_info_insert_record((*ji_ptr)->job_id, (*ji_ptr)->user_id,
+      rc = dbmgr_db_job_info_insert_record((*ji_ptr)->job_id, (*ji_ptr)->user_id, (*ji_ptr)->group_id,
                                            (*ji_ptr)->priority, (*ji_ptr)->status,
                                            (*ji_ptr)->qprogram, (*ji_ptr)->circuit_fmt, (*ji_ptr)->shots,
                                            (*ji_ptr)->qc_type, (*ji_ptr)->transpiler,
@@ -835,9 +848,13 @@ dbmgr_ji_create_job(const char *user_id, const uint8_t priority,
                                            (*ji_ptr)->update_time);
       if (rc != SQC_RESULT_OK) {
         sqc_msg_error("Failed to Insert Job record: %s\n", sqc_error_get_string(rc));
+        s_dbmgr_job_info_record_delete(*ji_ptr);
+        *ji_ptr = NULL;
       }
     } else {
       sqc_msg_error("Failed to add Job record: %s\n", sqc_error_get_string(rc));
+      s_dbmgr_job_info_record_destroy(*ji_ptr);
+      *ji_ptr = NULL;
     }
   } else {
     sqc_msg_error("Failed to create Job record: %s\n", sqc_error_get_string(rc));
@@ -977,6 +994,42 @@ dbmgr_ji_get_user_id_len(const dbmgr_job_info_t ji_ptr, size_t *user_id_len) {
     s_dbmgr_job_info_record_rlock(ji_ptr);
     {
       *user_id_len = ji_ptr->user_id_len;
+    }
+    s_dbmgr_job_info_record_unlock(ji_ptr);
+
+    return SQC_RESULT_OK;
+  } else {
+    return SQC_RESULT_INVALID_ARGS;
+  }
+}
+
+
+sqc_result_t
+dbmgr_ji_get_group_id(const dbmgr_job_info_t ji_ptr, char **group_id) {
+  if (likely(ji_ptr != NULL && group_id != NULL && *group_id == NULL)) {
+    s_dbmgr_job_info_record_rlock(ji_ptr);
+    {
+      *group_id = strdup(ji_ptr->group_id);
+    }
+    s_dbmgr_job_info_record_unlock(ji_ptr);
+
+    if (*group_id == NULL) {
+      return SQC_RESULT_NO_MEMORY;
+    }
+
+    return SQC_RESULT_OK;
+  } else {
+    return SQC_RESULT_INVALID_ARGS;
+  }
+}
+
+
+sqc_result_t
+dbmgr_ji_get_group_id_len(const dbmgr_job_info_t ji_ptr, size_t *group_id_len) {
+  if (likely(ji_ptr != NULL && group_id_len != NULL)) {
+    s_dbmgr_job_info_record_rlock(ji_ptr);
+    {
+      *group_id_len = ji_ptr->group_id_len;
     }
     s_dbmgr_job_info_record_unlock(ji_ptr);
 
@@ -1497,6 +1550,85 @@ dbmgr_ji_get_user_token_len(const dbmgr_job_info_t ji_ptr, size_t *user_token_le
       *user_token_len = ji_ptr->user_token_len;
     }
     s_dbmgr_job_info_record_unlock(ji_ptr);
+
+    return SQC_RESULT_OK;
+  } else {
+    return SQC_RESULT_INVALID_ARGS;
+  }
+}
+
+
+sqc_result_t
+dbmgr_ji_get_exec_time_estimate_msec(const dbmgr_job_info_t ji_ptr,
+                                     uint64_t *exec_time_estimate_msec) {
+  if (likely(ji_ptr != NULL && exec_time_estimate_msec != NULL)) {
+    s_dbmgr_job_info_record_rlock(ji_ptr);
+    {
+      *exec_time_estimate_msec = ji_ptr->exec_time_estimate_msec;
+    }
+    s_dbmgr_job_info_record_unlock(ji_ptr);
+
+    return SQC_RESULT_OK;
+  } else {
+    return SQC_RESULT_INVALID_ARGS;
+  }
+}
+
+
+sqc_result_t
+dbmgr_ji_set_exec_time_estimate_msec(dbmgr_job_info_t ji_ptr,
+                                     uint64_t exec_time_estimate_msec) {
+  if (likely(ji_ptr != NULL)) {
+    s_dbmgr_job_info_record_wlock(ji_ptr);
+    {
+      ji_ptr->exec_time_estimate_msec = exec_time_estimate_msec;
+      ji_ptr->update_time = sqc_chrono_now();
+    }
+    s_dbmgr_job_info_record_unlock(ji_ptr);
+
+    // Update DB
+    (void)dbmgr_db_job_info_update_exec_time_estimate_msec(ji_ptr->job_id,
+                                                           ji_ptr->exec_time_estimate_msec,
+                                                           ji_ptr->update_time);
+
+    return SQC_RESULT_OK;
+  } else {
+    return SQC_RESULT_INVALID_ARGS;
+  }
+}
+
+
+sqc_result_t
+dbmgr_ji_get_exec_time_msec(const dbmgr_job_info_t ji_ptr,
+                            uint64_t *exec_time_msec) {
+  if (likely(ji_ptr != NULL && exec_time_msec != NULL)) {
+    s_dbmgr_job_info_record_rlock(ji_ptr);
+    {
+      *exec_time_msec = ji_ptr->exec_time_msec;
+    }
+    s_dbmgr_job_info_record_unlock(ji_ptr);
+
+    return SQC_RESULT_OK;
+  } else {
+    return SQC_RESULT_INVALID_ARGS;
+  }
+}
+
+
+sqc_result_t
+dbmgr_ji_set_exec_time_msec(dbmgr_job_info_t ji_ptr, uint64_t exec_time_msec) {
+  if (likely(ji_ptr != NULL)) {
+    s_dbmgr_job_info_record_wlock(ji_ptr);
+    {
+      ji_ptr->exec_time_msec = exec_time_msec;
+      ji_ptr->update_time = sqc_chrono_now();
+    }
+    s_dbmgr_job_info_record_unlock(ji_ptr);
+
+    // Update DB
+    (void)dbmgr_db_job_info_update_exec_time_msec(ji_ptr->job_id,
+                                                  ji_ptr->exec_time_msec,
+                                                  ji_ptr->update_time);
 
     return SQC_RESULT_OK;
   } else {

@@ -177,6 +177,7 @@ rpc_session_client_get_peer_name(rpc_session_client_t *rpc_session, char **name,
 /// @param[in]     transpiler   Transpiler type of the job.
 /// @param[in]     remark       Remark comment for the job.
 /// @param[in]     user_token   User token for the job.
+/// @param[in]     group_id     Group ID.
 /// @param[out]    code         A result code of the submission the scheduler returns.
 /// @param[out]    msg          A message about the result the scheduler reports.
 /// @param[out]    job_id       An issued job ID.
@@ -204,7 +205,7 @@ sqc_result_t
 rpc_session_client_submit_job(rpc_session_client_t *rpc_session, uint8_t priority,
                               const char *qprogram, sqc_rpc_sched_circuit_fmt_t circuit_fmt, size_t shots,
                               sqc_rpc_sched_qc_type_t qc_type, sqc_rpc_sched_transpiler_t transpiler,
-                              const char *remark, const char *user_token,
+                              const char *remark, const char *user_token, const char *group_id,
                               sqc_result_t *code, char **msg, char **job_id);
 
 ///
@@ -441,5 +442,75 @@ sqc_result_t
 rpc_session_client_adm_set_user_status(rpc_session_client_t *rpc_session, const char *user_id, bool enabled,
                                        sqc_result_t *code, char **msg);
 
+///
+/// @brief   Activate / inactivate a user-group association.
+///
+/// @param[in]     rpc_session  An RPC session for client.
+/// @param[in]     user_id      A User ID.
+/// @param[in]     group_id     A Group ID.
+/// @param[in]     enabled      Acitivate (true) / Inactivate (false)
+/// @param[out]    code         A result code of the cancellation the scheduler returns.
+/// @param[out]    msg          A message about the result the scheduler reports.
+///
+/// @retval SQC_RESULT_OK               Succeeded.
+/// @retval SQC_RESULT_POSIX_API_ERROR  Failed, communication error.
+/// @retval SQC_RESULT_NO_MEMORY        Failed, no memory.
+/// @retval SQC_RESULT_INVALID_ARGS     Failed, invalid arguments.
+/// @retval SQC_RESULT_INVALID_OBJECT   Failed, received an unexpected reply from the scheduler.
+/// @retval SQC_RESULT_EOF              Failed, the RPC session has closed.
+/// @retval SQC_RESULT_NOT_ADMIN_USER   Failed, the RPC message is not issued by an administrator.
+/// @retval SQC_RESULT_DISABLED_USER    Failed, the RPC message is issued by an disabled user.
+/// @retval SQC_RESULT_ANY_FAILURES     Failed, any other reason.
+///
+/// @details The function <tt>rpc_session_client_adm_set_user_group_status()</tt> activates or
+/// inactivates the association between a user and a group.  Only the system administrator can
+/// perform the operation.  Upon success, <tt>*code</tt> and <tt>*msg</tt> are set respectively.
+///
+/// Note that <tt>*code</tt> may indicate an error even when the function returns
+/// \c SQC_RESULT_OK.  The return value from this function represents whether
+/// communication with the scheduler is succeeded, while <tt>*code</tt> represents
+/// a result code of the request returned from the scheduler.
+///
+/// \c msg must be freed by the caller.
+///
+sqc_result_t
+rpc_session_client_adm_set_user_group_status(rpc_session_client_t *rpc_session, const char *user_id,
+                                             const char *group_id, bool enabled,
+                                             sqc_result_t *code, char **msg);
+
+///
+/// @brief   Set the execution time limit for the group.
+///
+/// @param[in]     rpc_session          An RPC session for client.
+/// @param[in]     group_id             A Group ID.
+/// @param[in]     exec_time_limit      Execution time limit.
+/// @param[out]    code                 A result code of the cancellation the scheduler returns.
+/// @param[out]    msg                  A message about the result the scheduler reports.
+///
+/// @retval SQC_RESULT_OK               Succeeded.
+/// @retval SQC_RESULT_POSIX_API_ERROR  Failed, communication error.
+/// @retval SQC_RESULT_NO_MEMORY        Failed, no memory.
+/// @retval SQC_RESULT_INVALID_ARGS     Failed, invalid arguments.
+/// @retval SQC_RESULT_INVALID_OBJECT   Failed, received an unexpected reply from the scheduler.
+/// @retval SQC_RESULT_EOF              Failed, the RPC session has closed.
+/// @retval SQC_RESULT_NOT_ADMIN_USER   Failed, the RPC message is not issued by an administrator.
+/// @retval SQC_RESULT_DISABLED_USER    Failed, the RPC message is issued by an disabled user.
+/// @retval SQC_RESULT_ANY_FAILURES     Failed, any other reason.
+///
+/// @details The function <tt>rpc_session_client_adm_set_group_exec_time_limit()</tt> activites or
+/// inactivates a user.  Only the system administrator can performs the operation.
+/// Upon success, <tt>*code</tt> and <tt>*msg</tt> are set respectively.
+///
+/// Note that <tt>*code</tt> may indicate an error even when the function returns
+/// \c SQC_RESULT_OK.  The return value from this function represents whether
+/// communication with the scheduler is succeeded, while <tt>*code</tt> represents
+/// a result code of the request returned from the scheduler.
+///
+/// \c msg must be freed by the caller.
+///
+sqc_result_t
+rpc_session_client_adm_set_group_exec_time_limit(rpc_session_client_t *rpc_session,
+                                                 const char *group_id, uint64_t exec_time_limit,
+                                                 sqc_result_t *code, char **msg);
 
 __END_DECLS

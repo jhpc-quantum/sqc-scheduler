@@ -15,6 +15,12 @@ typedef enum {
 } sqc_rpc_sched_user_status_t;
 
 typedef enum {
+  SQC_RPC_SCHED_USER_GROUP_STATUS_UNKNOWN = 0,
+  SQC_RPC_SCHED_USER_GROUP_STATUS_DISABLED = 1,
+  SQC_RPC_SCHED_USER_GROUP_STATUS_ENABLED = 2,
+} sqc_rpc_sched_user_group_status_t;
+
+typedef enum {
   SQC_RPC_SCHED_CIRCUIT_FMT_UNKNOWN = 0,
   SQC_RPC_SCHED_CIRCUIT_FMT_QASM = 1,
   SQC_RPC_SCHED_CIRCUIT_FMT_QIR = 2,

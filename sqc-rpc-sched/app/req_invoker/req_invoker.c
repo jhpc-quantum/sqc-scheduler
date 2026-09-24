@@ -1,334 +1,124 @@
+#include "sqc_apis.h"
+#include "sqc_thread_internal.h"
+#include "sqc_rpc_sched_util.h"
+#include "sqc_rpc_sched_conv_enums.h"
+#include "dbmgr.h"
+
 #include "req_invoker.h"
 
-#include "req_invoker_invoke.c"
+#include "dummy_invoker.c"
+#include "rest_invoker.c"
 
-typedef struct req_invoker_thread_record {
-  struct sqc_thread_record thd_;
+#define INVOKE_FUNC_NUM (SQC_RPC_SCHED_QC_TYPE_DUMMY + 1)
 
-  sqc_chrono_t interval_;
+typedef void (*invoke_func_t)(const dbmgr_job_info_t);
 
-  sqc_rwlock_t rwlck_;
-
-  volatile bool do_loop_;
-  volatile bool is_started_;
-  volatile shutdown_grace_level_t shutdown_level_;
-} req_invoker_thread_record;
-typedef req_invoker_thread_record *req_invoker_thread_t;
-
-static req_invoker_thread_t s_mthd = NULL;
-static bool s_mod_inited = false;
-
-/*
- * module thread methods
- */
-
+static invoke_func_t invoke_funcs[INVOKE_FUNC_NUM] = {
+  [SQC_RPC_SCHED_QC_TYPE_RQC_REST] = s_rqc_invoke,
+  [SQC_RPC_SCHED_QC_TYPE_IBM_REST] = s_ibm_invoke,
+  [SQC_RPC_SCHED_QC_TYPE_SLURM_REST] = s_slurm_invoke,
+  [SQC_RPC_SCHED_QC_TYPE_A_OQTOPUSREST_SYSTEM_TOKEN] = s_oqtopus_invoke,
+  [SQC_RPC_SCHED_QC_TYPE_A_OQTOPUSREST_USER_TOKEN] = s_oqtopus_invoke,
+  [SQC_RPC_SCHED_QC_TYPE_A_OQTOPUSREST_BOTH_TOKEN] = s_oqtopus_invoke,
+  [SQC_RPC_SCHED_QC_TYPE_DUMMY] = s_dummy_invoke,
+};
 
 static inline void
-s_req_invoker_rlock(req_invoker_thread_t mt) {
-  if (likely(mt != NULL)) {
-    (void)sqc_rwlock_reader_lock(&(mt->rwlck_));
+s_req_invoker_update_group_exec_time_total_msec(dbmgr_job_info_t ji_ptr) {
+  sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
+  char *job_id = NULL;
+  char *group_id = NULL;
+  dbmgr_group_info_t gi_ptr = NULL;
+  uint8_t priority;
+  uint64_t exec_time_estimate_msec;
+  uint64_t exec_time_msec;
+  uint64_t weight;
+  uint64_t exec_time_diff_msec;
+
+  rc = dbmgr_ji_get_job_id(ji_ptr, &job_id);
+  if (rc != SQC_RESULT_OK) {
+    sqc_msg_error("Failed to update group exec_time_total_msec: err_msg=%s\n",
+                  sqc_error_get_string(rc));
+    goto error;
   }
-}
 
-
-static inline void
-s_req_invoker_wlock(req_invoker_thread_t mt) {
-  if (likely(mt != NULL)) {
-    (void)sqc_rwlock_writer_lock(&(mt->rwlck_));
+  rc = dbmgr_ji_get_group_id(ji_ptr, &group_id);
+  if (rc != SQC_RESULT_OK) {
+    sqc_msg_error("Failed to update group exec_time_total_msec: job_id=%s, err_msg=%s\n",
+                  job_id, sqc_error_get_string(rc));
+    goto error;
   }
-}
 
-
-static inline void
-s_req_invoker_unlock(req_invoker_thread_t mt) {
-  if (likely(mt != NULL)) {
-    (void)sqc_rwlock_unlock(&(mt->rwlck_));
+  rc = dbmgr_gi_group_find(group_id, &gi_ptr);
+  if (rc != SQC_RESULT_OK) {
+    sqc_msg_error("Failed to update group exec_time_total_msec: job_id=%s, group_id=%s, err_msg=%s\n",
+                  job_id, group_id, sqc_error_get_string(rc));
+    goto error;
   }
-}
 
+  rc = dbmgr_ji_get_priority(ji_ptr, &priority);
+  if (rc != SQC_RESULT_OK) {
+    sqc_msg_error("Failed to update group exec_time_total_msec: job_id=%s, group_id=%s, err_msg=%s\n",
+                  job_id, group_id, sqc_error_get_string(rc));
+    goto error;
+  }
 
-static void
-s_req_invoker_thd_finalize(const sqc_thread_t *tptr, bool is_canceled,
-                       void *arg) {
-  req_invoker_thread_t mt = (req_invoker_thread_t)*tptr;
-  (void)arg;
+  rc = dbmgr_ji_get_exec_time_estimate_msec(ji_ptr, &exec_time_estimate_msec);
+  if (rc != SQC_RESULT_OK) {
+    sqc_msg_error("Failed to update group exec_time_total_msec: job_id=%s, group_id=%s, err_msg=%s\n",
+                  job_id, group_id, sqc_error_get_string(rc));
+    goto error;
+  }
 
-  sqc_msg_debug(5, "called.\n");
+  rc = dbmgr_ji_get_exec_time_msec(ji_ptr, &exec_time_msec);
+  if (rc != SQC_RESULT_OK) {
+    sqc_msg_error("Failed to update group exec_time_total_msec: job_id=%s, group_id=%s, err_msg=%s\n",
+                  job_id, group_id, sqc_error_get_string(rc));
+    goto error;
+  }
 
-  if (likely(mt != NULL)) {
+  rc = dbmgr_wi_get_weight(priority, &weight);
+  if (rc != SQC_RESULT_OK) {
+    sqc_msg_error("Failed to update group exec_time_total_msec: job_id=%s, group_id=%s, err_msg=%s\n",
+                  job_id, group_id, sqc_error_get_string(rc));
+    goto error;
+  }
 
-    if (is_canceled == true) {
-      if (mt->is_started_ == false) {
-        /*
-         * Means this thread is canceled while waiting for the global
-         * state change.
-         */
-        global_state_cancel_janitor();
-        s_req_invoker_unlock(mt);
-      }
+  exec_time_msec = sqc_rpc_sched_util_calc_weighted_execution_time(exec_time_msec, weight);
+
+  if (exec_time_msec > exec_time_estimate_msec) {
+    exec_time_diff_msec = exec_time_msec - exec_time_estimate_msec;
+    rc = dbmgr_gi_add_exec_time_total_msec(gi_ptr, exec_time_diff_msec);
+    if (rc != SQC_RESULT_OK) {
+      sqc_msg_error("Failed to update group exec_time_total_msec: job_id=%s, group_id=%s, err_msg=%s\n",
+                    job_id, group_id, sqc_error_get_string(rc));
+      goto error;
     }
-  }
 
-  sqc_msg_debug(5, "called with %s self and the thread is %s.",
-                ((mt != NULL) ? "valid" : "invalid (NULL)"),
-                ((is_canceled == true) ? "canceled" : "exited"));
-}
-
-
-static void
-s_req_invoker_thd_freeup(const sqc_thread_t *tptr, void *arg) {
-  req_invoker_thread_t mt = (req_invoker_thread_t)*tptr;
-
-  (void)arg;
-
-  sqc_msg_debug(5, "called with %s self.\n",
-                ((mt != NULL) ? "valid" : "invalid (NULL)"));
-  if (mt != NULL) {
-    /*
-     * Here we can free up all the resource related to this thread.
-     */
-    if (mt->rwlck_ != NULL) {
-      (void)sqc_rwlock_destroy(&(mt->rwlck_));
+    sqc_msg_info("Update(add) group exec_time_total_msec: job_id=%s, group_id=%s, exec_time_diff_msec=%ld\n",
+                 job_id, group_id, exec_time_diff_msec);
+  } else if (exec_time_msec < exec_time_estimate_msec) {
+    exec_time_diff_msec = exec_time_estimate_msec - exec_time_msec;
+    rc = dbmgr_gi_subtract_exec_time_total_msec(gi_ptr, exec_time_diff_msec);
+    if (rc != SQC_RESULT_OK) {
+      sqc_msg_error("Failed to update group exec_time_total_msec: job_id=%s, group_id=%s, err_msg=%s\n",
+                    job_id, group_id, sqc_error_get_string(rc));
+      goto error;
     }
-  }
-}
 
-
-static sqc_result_t
-s_req_invoker_thd_main(const sqc_thread_t *tptr, void *arg) {
-  sqc_result_t ret = SQC_RESULT_ANY_FAILURES;
-  global_state_t s;
-  shutdown_grace_level_t l;
-  req_invoker_thread_t mt = (req_invoker_thread_t)*tptr;
-
-  (void)arg;
-
-  sqc_msg_debug(5, "waiting for the gala opening...\n");
-
-  ret = global_state_wait_for(GLOBAL_STATE_STARTED, &s, &l, -1LL);
-  if (ret == SQC_RESULT_OK && s == GLOBAL_STATE_STARTED) {
-    s_req_invoker_wlock(mt);
-    {
-      mt->is_started_ = true;
-    }
-    s_req_invoker_unlock(mt);
-
-    sqc_msg_debug(5, "gala opening.\n");
-
-    /*
-     * The main loop.
-     */
-    do {
-      sqc_msg_debug(100, "looping...\n");
-
-      s_req_invoker_invoke_job();
-
-      /*
-       * Create an explicit cancalation point since this loop has
-       * none of it.
-       */
-      pthread_testcancel();
-
-    } while (mt->do_loop_ == true);
-
-    /*
-     * Reaching here means someone called a shutdown request.
-     */
-    if (mt->shutdown_level_ == SHUTDOWN_GRACEFULLY) {
-      /*
-       * This is just emulating/mimicking a graceful shutdown by
-       * sleep().  Don't do this on actual modules.
-       */
-      sqc_msg_debug(5, "mimicking gracefull shutdown...\n");
-      sleep(5);
-      sqc_msg_debug(5, "mimicking gracefull shutdown done.\n");
-      ret = SQC_RESULT_OK;
-    } else {
-      ret = 1LL;
-    }
-  }
-
-  return ret;
-}
-
-
-static inline sqc_result_t
-s_req_invoker_thd_create(req_invoker_thread_t *tptr, sqc_chrono_t interval) {
-  sqc_result_t ret = SQC_RESULT_INVALID_ARGS;
-
-  sqc_msg_debug(5, "called.\n");
-
-  if (likely(interval >= 1000 * 1000)) {
-    if ((ret = sqc_thread_create_with_size((sqc_thread_t *)tptr,
-                                           sizeof(req_invoker_thread_record),
-                                           s_req_invoker_thd_main,
-                                           s_req_invoker_thd_finalize,
-                                           s_req_invoker_thd_freeup,
-                                           "req_invoker_thd",
-                                           NULL)) == SQC_RESULT_OK) {
-      (*tptr)->rwlck_ = NULL;
-      if ((ret = sqc_rwlock_create(&((*tptr)->rwlck_))) == SQC_RESULT_OK) {
-        (*tptr)->interval_ = interval;
-        (*tptr)->do_loop_ = false;
-        (*tptr)->is_started_ = false;
-        (*tptr)->shutdown_level_ = SHUTDOWN_UNKNOWN;
-        goto done;
-      }
-
-      sqc_thread_destroy((sqc_thread_t *)tptr);
-    }
+    sqc_msg_info("Update(subtract) group exec_time_total_msec: job_id=%s, group_id=%s, exec_time_diff_msec=%ld\n",
+                 job_id, group_id, exec_time_diff_msec);
   } else {
-    ret = SQC_RESULT_INVALID_ARGS;
+    // Do nothing.
+    sqc_msg_info("No Update group exec_time_total_msec: job_id=%s, group_id=%s\n",
+                 job_id, group_id);
   }
 
-done:
-  return ret;
-}
-
-
-static inline void
-s_req_invoker_thd_destroy(req_invoker_thread_t tptr) {
-  sqc_msg_debug(5, "called.\n");
-
-  sqc_thread_destroy((sqc_thread_t *)tptr);
-}
-
-
-/*
- * module methods
- */
-
-
-static sqc_result_t
-s_req_invoker_initialize(int argc, const char *const argv[], void *extarg,
-                    sqc_thread_t **thdptr) {
-  sqc_result_t ret = SQC_RESULT_ANY_FAILURES;
-
-  (void)argc;
-  (void)argv;
-  (void)extarg;
-
-  sqc_msg_debug(5, "called.\n");
-
-  if (thdptr != NULL) {
-    *thdptr = NULL;
-  }
-
-  if (likely((ret = s_req_invoker_thd_create(&s_mthd,
-                                       1000LL * 1000LL * 1000LL * 5LL)) ==
-             SQC_RESULT_OK)) {
-    *thdptr = (sqc_thread_t *)&s_mthd;
-    s_mod_inited = true;
-  }
-
-  if ((ret = s_req_invoker_invoke_initialize()) != SQC_RESULT_OK) {
-    sqc_perror(ret);
-  }
-
-  return ret;
-}
-
-
-static sqc_result_t
-s_req_invoker_start(void) {
-  sqc_result_t ret = SQC_RESULT_ANY_FAILURES;
-
-  sqc_msg_debug(5, "called.\n");
-
-  if (likely(s_mod_inited == true)) {
-    if (likely(s_mthd != NULL)) {
-      if (likely((ret = sqc_thread_start((sqc_thread_t *)&s_mthd, false)) ==
-                 SQC_RESULT_OK)) {
-
-        s_req_invoker_wlock(s_mthd);
-        {
-          s_mthd->do_loop_ = true;
-        }
-        s_req_invoker_unlock(s_mthd);
-
-      }
-    } else {
-      ret = SQC_RESULT_INVALID_OBJECT;
-    }
-  } else {
-    ret = SQC_RESULT_INVALID_STATE_TRANSITION;
-  }
-
-  return ret;
-}
-
-
-static sqc_result_t
-s_req_invoker_shutdown(shutdown_grace_level_t l) {
-  sqc_result_t ret = SQC_RESULT_ANY_FAILURES;
-
-  sqc_msg_debug(5, "called.\n");
-
-  if (likely(s_mod_inited == true)) {
-    if (likely(s_mthd != NULL)) {
-
-      s_req_invoker_wlock(s_mthd);
-      {
-        if (s_mthd->is_started_ == true) {
-          s_mthd->shutdown_level_ = l;
-          s_mthd->do_loop_ = false;
-          ret = SQC_RESULT_OK;
-        } else {
-          ret = SQC_RESULT_INVALID_STATE_TRANSITION;
-        }
-      }
-      s_req_invoker_unlock(s_mthd);
-
-    } else {
-      ret = SQC_RESULT_INVALID_OBJECT;
-    }
-  } else {
-    ret = SQC_RESULT_INVALID_STATE_TRANSITION;
-  }
-
-  return ret;
-}
-
-
-static sqc_result_t
-s_req_invoker_stop(void) {
-  sqc_result_t ret = SQC_RESULT_ANY_FAILURES;
-
-  sqc_msg_debug(5, "called.\n");
-
-  if (likely(s_mod_inited == true)) {
-    if (likely(s_mthd != NULL)) {
-
-      s_req_invoker_wlock(s_mthd);
-      {
-        if (s_mthd->is_started_ == true) {
-          ret = sqc_thread_cancel((sqc_thread_t *)&s_mthd);
-        } else {
-          ret = SQC_RESULT_INVALID_STATE_TRANSITION;
-        }
-      }
-      s_req_invoker_unlock(s_mthd);
-
-    } else {
-      ret = SQC_RESULT_INVALID_OBJECT;
-    }
-  } else {
-    ret = SQC_RESULT_INVALID_STATE_TRANSITION;
-  }
-
-  return ret;
-}
-
-
-static void
-s_req_invoker_finalize(void) {
-  sqc_msg_debug(5, "called.\n");
-
-  s_req_invoker_invoke_finalize();
-
-  if (likely(s_mthd != NULL)) {
-    s_req_invoker_thd_destroy(s_mthd);
-  }
+error:
+  free(job_id);
+  job_id = NULL;
+  free(group_id);
+  group_id = NULL;
 }
 
 
@@ -338,14 +128,90 @@ s_req_invoker_finalize(void) {
 
 
 sqc_result_t
-req_invoker_register(void) {
-  return sqc_module_register("req invoker",
-                             s_req_invoker_initialize,
-                             NULL,
-                             s_req_invoker_start,
-                             s_req_invoker_shutdown,
-                             s_req_invoker_stop,
-                             s_req_invoker_finalize,
-                             NULL);
+req_invoker_invoke(const dbmgr_job_info_t ji_ptr) {
+  sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
+  char *job_id = NULL;
+  sqc_rpc_sched_qc_type_t qc_type = SQC_RPC_SCHED_QC_TYPE_UNKNOWN;
+  sqc_rpc_sched_job_status_t status = SQC_RPC_SCHED_JOB_STATUS_UNKNOWN;
+
+  if (ji_ptr == NULL) {
+    rc = SQC_RESULT_INVALID_ARGS;
+    sqc_msg_error("Job is invalid: err_msg=%s\n", sqc_error_get_string(rc));
+    goto error;
+  }
+
+  rc = dbmgr_ji_get_job_id(ji_ptr, &job_id);
+  if (rc != SQC_RESULT_OK) {
+    sqc_msg_error("Failed to get db job id: err_msg=%s\n", sqc_error_get_string(rc));
+    if (dbmgr_set_job_status_error(ji_ptr) != SQC_RESULT_OK) {
+      sqc_msg_error("Failed to transition status to error.\n");
+    }
+    goto error;
+  }
+
+  rc = dbmgr_ji_get_qc_type(ji_ptr, &qc_type);
+  if (rc != SQC_RESULT_OK) {
+    sqc_msg_error("Failed to get qc_type: job_id=%s, err_msg=%s\n",
+                  job_id, sqc_error_get_string(rc));
+    if (dbmgr_set_job_status_error(ji_ptr) != SQC_RESULT_OK) {
+      sqc_msg_error("Failed to transition status to error: job_id=%s\n", job_id);
+    }
+    goto error;
+  }
+
+  rc = dbmgr_ji_get_status(ji_ptr, &status);
+  if (rc != SQC_RESULT_OK) {
+    sqc_msg_error("Failed to get db job status: job_id=%s, err_msg=%s\n",
+                  job_id, sqc_error_get_string(rc));
+    if (dbmgr_set_job_status_error(ji_ptr) != SQC_RESULT_OK) {
+      sqc_msg_error("Failed to transition status to error: job_id=%s\n", job_id);
+    }
+    goto error;
+  }
+
+  sqc_msg_info("Starting job invocation: job_id=%s, qc_type=%d status=%d(%s)\n",
+               job_id, qc_type, status, sqc_rpc_sched_job_status_to_string(status));
+
+  if (status == SQC_RPC_SCHED_JOB_STATUS_CANCELLED) {
+    rc = SQC_RESULT_OK;
+    // Do nothing.
+    sqc_msg_info("Job was canceled and did not run: job_id=%s\n", job_id);
+    goto error;
+  } else if (status == SQC_RPC_SCHED_JOB_STATUS_DELETED) {
+    rc = SQC_RESULT_OK;
+    // Do nothing.
+    sqc_msg_info("Job was deleted and did not run: job_id=%s\n", job_id);
+    goto error;
+  } else if (status != SQC_RPC_SCHED_JOB_STATUS_QUEUED) {
+    rc = SQC_RESULT_OK;
+    // Do nothing.
+    sqc_msg_error("Job did not run due to an invalid status: job_id=%s, status=%d(%s)\n",
+                  job_id, status, sqc_rpc_sched_job_status_to_string(status));
+    goto error;
+  }
+
+  if (invoke_funcs[qc_type] != NULL) {
+    sqc_msg_info("Invoking job: job_id=%s, qc_type=%d status=%d(%s)\n",
+                 job_id, qc_type, status, sqc_rpc_sched_job_status_to_string(status));
+
+    // Invoke job
+    (*invoke_funcs[qc_type])(ji_ptr);
+
+    // Update group exec_time_total_msec
+    s_req_invoker_update_group_exec_time_total_msec(ji_ptr);
+  } else {
+    rc = SQC_RESULT_ANY_FAILURES;
+    sqc_msg_error("Unknown qc_type: job_id=%s, qc_type=%d\n", job_id, qc_type);
+    if (dbmgr_set_job_status_error(ji_ptr) != SQC_RESULT_OK) {
+      sqc_msg_error("Failed to transition status to error: job_id=%s\n", job_id);
+    }
+    goto error;
+  }
+
+error:
+  free(job_id);
+  job_id = NULL;
+
+  return rc;
 }
 

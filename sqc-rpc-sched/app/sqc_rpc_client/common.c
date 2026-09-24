@@ -5,7 +5,7 @@
 
 
 const char *program_name = "sqc_rpc_client";
-const char *default_conf_dir = "~/.sqc_rpc_sched";
+const char *default_conf_dir = "~/.sqc-scheduler";
 const char *default_remark = "";
 
 //
@@ -92,7 +92,7 @@ parse_uint(const char *arg, unsigned long long max_value, unsigned long long *va
     if (likely(isdigit(*arg))) {
       errno = 0;
       ull = strtoull(arg, &endp, 10);
-      if (likely(endp != NULL && *endp == '\0' && errno == 0 && ull < max_value)) {
+      if (likely(endp != NULL && *endp == '\0' && errno == 0 && ull <= max_value)) {
         *value = ull;
         ret = true;
       }
@@ -133,6 +133,25 @@ parse_uint32(const char *arg, uint32_t *value) {
   if (likely(arg != NULL && value != NULL)) {
     if (likely(parse_uint(arg, UINT32_MAX, &ull) == true)) {
       *value = (uint32_t) ull;
+      ret = true;
+    }
+  }
+
+  return ret;
+}
+
+
+//
+// Parse a uint64_t integer.
+//
+bool
+parse_uint64(const char *arg, uint64_t *value) {
+  bool ret = false;
+  unsigned long long ull = 0ull;
+
+  if (likely(arg != NULL && value != NULL)) {
+    if (likely(parse_uint(arg, UINT64_MAX, &ull) == true)) {
+      *value = (uint64_t) ull;
       ret = true;
     }
   }

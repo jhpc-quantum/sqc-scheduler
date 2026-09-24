@@ -4,7 +4,10 @@
 #include "dbmgr.h"
 #include "dbmgr_db.h"
 #include "dbmgr_user_info.c"
+#include "dbmgr_group_info.c"
+#include "dbmgr_user_group_info.c"
 #include "dbmgr_job_info.c"
+#include "dbmgr_weight_info.c"
 
 typedef struct dbmgr_thread_record {
   struct sqc_thread_record thd_;
@@ -227,7 +230,10 @@ s_dbmgr_initialize(int argc, const char *const argv[], void *extarg,
 
   if ((ret = dbmgr_db_initialize()) != SQC_RESULT_OK ||
       (ret = s_dbmgr_user_info_initialize()) != SQC_RESULT_OK ||
-      (ret = s_dbmgr_job_info_initialize()) != SQC_RESULT_OK) {
+      (ret = s_dbmgr_group_info_initialize()) != SQC_RESULT_OK ||
+      (ret = s_dbmgr_user_group_info_initialize()) != SQC_RESULT_OK ||
+      (ret = s_dbmgr_job_info_initialize()) != SQC_RESULT_OK ||
+      (ret = s_dbmgr_weight_info_initialize()) != SQC_RESULT_OK) {
     sqc_perror(ret);
   }
 
@@ -330,8 +336,11 @@ static void
 s_dbmgr_finalize(void) {
   sqc_msg_debug(5, "called.\n");
 
-  s_dbmgr_user_info_finalize();
+  s_dbmgr_weight_info_finalize();
   s_dbmgr_job_info_finalize();
+  s_dbmgr_user_group_info_finalize();
+  s_dbmgr_group_info_finalize();
+  s_dbmgr_user_info_finalize();
   dbmgr_db_finalize();
 
   if (likely(s_mthd != NULL)) {

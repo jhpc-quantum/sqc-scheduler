@@ -233,7 +233,7 @@ get_default_server() {
 //
 const std::string
 get_default_conf_dir() {
-  static const std::string default_conf_dir = "~/.sqc_rpc_sched";
+  static const std::string default_conf_dir = "~/.sqc-scheduler";
   return default_conf_dir;
 }
 

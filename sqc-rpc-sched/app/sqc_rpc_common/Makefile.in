@@ -9,7 +9,7 @@ INSTALL_LIB_DIR         = $(DEST_LIBDIR)
 
 TARGETS					= $(TARGET_LIB_CXX)
 
-SRCS					= sqc_rpc_sched_conv_enums.c sqc_rpc_sched_conf.c
+SRCS					= sqc_rpc_sched_conv_enums.c sqc_rpc_sched_conf.c sqc_rpc_sched_util.c
 
 include $(MKRULES_BUILDDIR)/vars.mk
 

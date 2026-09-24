@@ -2,7 +2,10 @@
 
 #include "sqc_rpc_sched.h"
 #include "dbmgr_user.h"
+#include "dbmgr_group.h"
+#include "dbmgr_user_group.h"
 #include "dbmgr_job.h"
+#include "dbmgr_weight.h"
 #include "dbmgr_types.h"
 
 __BEGIN_DECLS

@@ -730,3 +730,5 @@ tls_conf_dump(sqc_tls_conf_t conf) {
         sqc_msg_debug(5, "tls_conf = (null)\n");
     }
 }
+
+__END_DECLS

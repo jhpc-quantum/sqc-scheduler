@@ -163,10 +163,10 @@ user@<SERVER_ADDRESS>'s password:
 
 Upon success, the super quantum computer RPC scheduler issues a job ID.
 ```
-submit_job reply:
-  code    = 0 (No error(s))
-  message = ''
-  job_id  = d4d22952-3159-4c7c-864c-89560700d552
+result: success
+code: 0
+message:
+job_id: d4d22952-3159-4c7c-864c-89560700d552
 ```
 
 Get Job Status:
@@ -174,11 +174,13 @@ Get Job Status:
 $ ${SQC_HOME}/bin/sqc_rpc_client status --auth=<AUTH_METHOD> d4d22952-3159-4c7c-864c-89560700d552
 ```
 ```
-job_status reply:
-  code    = 0 (No error(s))
-  message = ''
-  status  = 4 (done)
-  result  = '{   "counts": { (snip) } }'
+result: success
+code: 0
+message:
+job status:
+  status: 4 (done)
+  qc_job_id:
+  result: {   "counts": { (snip) } }
 ```
 
 Cancel Submitted Job:
@@ -186,9 +188,9 @@ Cancel Submitted Job:
 $ ${SQC_HOME}/bin/sqc_rpc_client cancel --auth=<AUTH_METHOD> d4d22952-3159-4c7c-864c-89560700d552
 ```
 ```
-cancel_job reply:
-  code    = 0 (No error(s))
-  message = ''
+result: success
+code: 0
+message:
 ```
 
 Delete Submitted Job:
@@ -196,9 +198,9 @@ Delete Submitted Job:
 $ ${SQC_HOME}/bin/sqc_rpc_client delete --auth=<AUTH_METHOD> d4d22952-3159-4c7c-864c-89560700d552
 ```
 ```
-delete_job reply:
-  code    = 0 (No error(s))
-  message = ''
+result: success
+code: 0
+message:
 ```
 
 List Information of Jobs Submitted by the Current User:
@@ -206,13 +208,13 @@ List Information of Jobs Submitted by the Current User:
 $ ${SQC_HOME}/bin/sqc_rpc_client list --auth=<AUTH_METHOD>
 ```
 ```
-job_list reply:
-  code      = 0 (No error(s))
-  message   = ''
-  jobs:
-    id=bb5ef342-4f9e-41b3-bfcb-37897b468dae, status=4 (done), qc_job_id=
-    id=3c804a87-cd5a-4668-98ce-ead7c039639d, status=4 (done), qc_job_id=
-    id=dd2fa67a-d4eb-4bd2-9523-379961c8cdce, status=4 (done), qc_job_id=
+result: success
+code: 0
+message:
+jobs:
+  id=bb5ef342-4f9e-41b3-bfcb-37897b468dae, status=4 (done), qc_job_id=
+  id=3c804a87-cd5a-4668-98ce-ead7c039639d, status=4 (done), qc_job_id=
+  id=dd2fa67a-d4eb-4bd2-9523-379961c8cdce, status=4 (done), qc_job_id=
 ```
 
 Delete Jobs by Administrator:
@@ -220,9 +222,9 @@ Delete Jobs by Administrator:
 $ ${SQC_HOME}/bin/sqc_rpc_client adm-del-jobs --auth=<AUTH_METHOD> alice 20240101 20241231
 ```
 ```
-adm-del-jobs reply:
-  code    = 0 (No error(s))
-  message = ''
+result: success
+code: 0
+message:
 ```
 
 Add a User:
@@ -230,9 +232,9 @@ Add a User:
 $ ${SQC_HOME}/bin/sqc_rpc_client adm-add-user --auth=<AUTH_METHOD> bob
 ```
 ```
-adm-add-user reply:
-  code    = 0 (No error(s))
-  message = ''
+result: success
+code: 0
+message:
 ```
 
 Set Status of a User:
@@ -240,14 +242,45 @@ Set Status of a User:
 $ ${SQC_HOME}/bin/sqc_rpc_client adm-set-user-status --auth=<AUTH_METHOD> bob disable
 ```
 ```
-adm-set-user-status reply:
-  code    = 0 (No error(s))
-  message = ''
+result: success
+code: 0
+message:
 ```
 
 To reactivate the user:
 ```
 $ ${SQC_HOME}/bin/sqc_rpc_client adm-set-user-status --auth=<AUTH_METHOD> bob enable
+```
+
+Set Executable Time Limit of a Group:
+```
+$ ${SQC_HOME}/bin/sqc_rpc_client adm-set-group-exec-time-limit --auth=<AUTH_METHOD> research 100
+```
+```
+result: success
+code: 0
+message:
+```
+
+where `research` is the group ID and `100` is the executable time limit in hours.
+
+Set Status of a User-Group Association:
+```
+$ ${SQC_HOME}/bin/sqc_rpc_client adm-set-user-group-status --auth=<AUTH_METHOD> bob research disable
+```
+```
+result: success
+code: 0
+message:
+```
+
+where `bob` is the user ID, `research` is the group ID, and `disable` deactivates the
+association between them. If the association does not exist yet, `enable` creates it;
+`disable` on a non-existent association fails instead of creating one.
+
+To reactivate the association:
+```
+$ ${SQC_HOME}/bin/sqc_rpc_client adm-set-user-group-status --auth=<AUTH_METHOD> bob research enable
 ```
 
 ### `grpc_client`(gRPC)
@@ -266,7 +299,10 @@ $ export SQC_GRPC_USER_TOKEN=<USER_TOKEN>
 
 Upon success, the super quantum computer RPC scheduler issues a job ID.
 ```
-[INFO ] reply: result_code=0, job_id=d4d22952-3159-4c7c-864c-89560700d552
+result: success
+code: 0
+message:
+job_id: d4d22952-3159-4c7c-864c-89560700d552
 ```
 
 Get Job Status:
@@ -274,7 +310,13 @@ Get Job Status:
 $ ${SQC_HOME}/grpc-job-broker/bin/grpc_client status d4d22952-3159-4c7c-864c-89560700d552
 ```
 ```
-[INFO ] reply: result_code=0, job_status=4, job_status_message=, computation_result={ (snip) }
+result: success
+code: 0
+message:
+job status:
+  status: 4
+  qc_job_id:
+  qc_result: {   "counts": { (snip) } }
 ```
 
 Cancel Submitted Job:
@@ -282,7 +324,9 @@ Cancel Submitted Job:
 $ ${SQC_HOME}/grpc-job-broker/bin/grpc_client cancel d4d22952-3159-4c7c-864c-89560700d552
 ```
 ```
-[INFO ] reply: result_code=0, message=
+result: success
+code: 0
+message:
 ```
 
 Delete Submitted Job:
@@ -290,7 +334,9 @@ Delete Submitted Job:
 $ ${SQC_HOME}/grpc-job-broker/bin/grpc_client delete d4d22952-3159-4c7c-864c-89560700d552
 ```
 ```
-[INFO ] reply: result_code=0, message=
+result: success
+code: 0
+message:
 ```
 
 List Information of Jobs Submitted by the Current User:
@@ -298,10 +344,13 @@ List Information of Jobs Submitted by the Current User:
 $ ${SQC_HOME}/grpc-job-broker/bin/grpc_client list
 ```
 ```
-[INFO ] reply: result_code=0, message=
-[INFO ]   id=bb5ef342-4f9e-41b3-bfcb-37897b468dae, status=4, qc_job_id=
-[INFO ]   id=3c804a87-cd5a-4668-98ce-ead7c039639d, status=4, qc_job_id=
-[INFO ]   id=dd2fa67a-d4eb-4bd2-9523-379961c8cdce, status=4, qc_job_id=
+result: success
+code: 0
+message:
+jobs:
+  id=bb5ef342-4f9e-41b3-bfcb-37897b468dae, status=4, qc_job_id=
+  id=3c804a87-cd5a-4668-98ce-ead7c039639d, status=4, qc_job_id=
+  id=dd2fa67a-d4eb-4bd2-9523-379961c8cdce, status=4, qc_job_id=
 ```
 
 Delete Jobs by Administrator:
@@ -309,7 +358,9 @@ Delete Jobs by Administrator:
 $ ${SQC_HOME}/grpc-job-broker/bin/grpc_client adm-del-jobs alice 20240101 20241231
 ```
 ```
-[INFO ] reply: result_code=0, message=
+result: success
+code: 0
+message:
 ```
 
 Add a User:
@@ -317,7 +368,9 @@ Add a User:
 $ ${SQC_HOME}/grpc-job-broker/bin/grpc_client adm-add-user bob
 ```
 ```
-[INFO ] reply: result_code=0, message=
+result: success
+code: 0
+message:
 ```
 
 Set Status of a User:
@@ -325,10 +378,43 @@ Set Status of a User:
 $ ${SQC_HOME}/grpc-job-broker/bin/grpc_client adm-set-user-status bob disable
 ```
 ```
-[INFO ] reply: result_code=0, message=
+result: success
+code: 0
+message:
 ```
 
 To reactivate the user:
 ```
 $ ${SQC_HOME}/grpc-job-broker/bin/grpc_client adm-set-user-status bob enable
+```
+
+Set Executable Time Limit of a Group:
+```
+$ ${SQC_HOME}/grpc-job-broker/bin/grpc_client adm-set-group-exec-time-limit research 100
+```
+```
+result: success
+code: 0
+message:
+```
+
+where `research` is the group ID and `100` is the executable time limit in hours.
+
+Set Status of a User-Group Association:
+```
+$ ${SQC_HOME}/grpc-job-broker/bin/grpc_client adm-set-user-group-status bob research disable
+```
+```
+result: success
+code: 0
+message:
+```
+
+where `bob` is the user ID, `research` is the group ID, and `disable` deactivates the
+association between them. If the association does not exist yet, `enable` creates it;
+`disable` on a non-existent association fails instead of creating one.
+
+To reactivate the association:
+```
+$ ${SQC_HOME}/grpc-job-broker/bin/grpc_client adm-set-user-group-status bob research enable
 ```

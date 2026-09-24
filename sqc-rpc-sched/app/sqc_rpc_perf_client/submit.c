@@ -19,6 +19,7 @@ typedef struct perf_args {
   sqc_rpc_sched_transpiler_t transpiler;
   const char *remark;
   const char *user_token;
+  const char *group_id;
   uint32_t loop_count;
 } perf_args_t;
 
@@ -97,7 +98,8 @@ s_create_perf_session_from_conf_dir(uint32_t thread_id, rpc_session_client_t *rp
 sqc_result_t
 rpc_submit_job(rpc_session_client_t *session, uint8_t priority, const char *qprogram,
                sqc_rpc_sched_circuit_fmt_t circuit_fmt, size_t shots, sqc_rpc_sched_qc_type_t qc_type,
-               sqc_rpc_sched_transpiler_t transpiler, const char *remark, const char *user_token,
+               sqc_rpc_sched_transpiler_t transpiler, const char *remark,
+               const char *user_token, const char *group_id,
                char **job_id, uint32_t thread_id, uint32_t loop_count) {
   sqc_result_t ret = SQC_RESULT_ANY_FAILURES;
   sqc_result_t request_result = SQC_RESULT_ANY_FAILURES;
@@ -110,27 +112,32 @@ rpc_submit_job(rpc_session_client_t *session, uint8_t priority, const char *qpro
              job_id != NULL)) {
     submit_start = sqc_chrono_now();
     request_result = rpc_session_client_submit_job(session, priority, qprogram, circuit_fmt, shots, qc_type,
-                                                   transpiler, remark, user_token, &code, &msg, job_id);
+                                                   transpiler, remark, user_token, group_id,
+                                                   &code, &msg, job_id);
     submit_end = sqc_chrono_now();
 
     if (likely(request_result == SQC_RESULT_OK)) {
       sqc_msg_info("[PERF] [thread:%d] [loop:%d] [submit] %f nsec, %.3f usec, %.6f msec, code: %lld, job_id: %s, "
-                   "priority=%u, shots=%zu, qc_type=%d, transpiler=%d, remark=%s, user_token=%s\n",
+                   "priority=%u, shots=%zu, qc_type=%d, transpiler=%d, remark=%s, "
+                   "user_token=%s, group_id=%s\n",
                    thread_id,
                    loop_count,
                    (double)(submit_end - submit_start),
                    (double)(submit_end - submit_start) / 1000.0,
                    (double)(submit_end - submit_start) / 1000.0 / 1000.0,
-                   (long long) code, *job_id, priority, shots, qc_type, transpiler, remark, user_token);
+                   (long long) code, *job_id, priority, shots, qc_type, transpiler, remark,
+                   user_token, group_id);
     } else {
       sqc_msg_info("[PERF] [thread:%d] [loop:%d] [submit] %f nsec, %.3f usec, %.6f msec, err: %s, "
-                   "priority=%u, shots=%zu, qc_type=%d, transpiler=%d, remark=%s, user_token=%s\n",
+                   "priority=%u, shots=%zu, qc_type=%d, transpiler=%d, remark=%s, "
+                   "user_token=%s, group_id=%s\n",
                    thread_id,
                    loop_count,
                    (double)(submit_end - submit_start),
                    (double)(submit_end - submit_start) / 1000.0,
                    (double)(submit_end - submit_start) / 1000.0 / 1000.0,
-                   sqc_error_get_string(ret), priority, shots, qc_type, transpiler, remark, user_token);
+                   sqc_error_get_string(ret), priority, shots, qc_type, transpiler, remark,
+                   user_token, group_id);
     }
     free(msg);
     ret = request_result;
@@ -150,7 +157,8 @@ static inline sqc_result_t
 s_subcmd_submit(const char *server, bool prefer_ipv4, rpc_auth_method_t auth_method, const char *conf_dir,
                 uint8_t priority, const char *qprogram, sqc_rpc_sched_circuit_fmt_t circuit_fmt, size_t shots,
                 sqc_rpc_sched_qc_type_t qc_type, sqc_rpc_sched_transpiler_t transpiler,
-                const char *remark, const char *user_token, uint32_t thread_id, uint32_t loop_count) {
+                const char *remark, const char *user_token, const char *group_id,
+                uint32_t thread_id, uint32_t loop_count) {
   sqc_result_t ret = SQC_RESULT_ANY_FAILURES;
   sqc_result_t create_result = SQC_RESULT_ANY_FAILURES;
   rpc_session_client_t session = NULL;
@@ -162,8 +170,8 @@ s_subcmd_submit(const char *server, bool prefer_ipv4, rpc_auth_method_t auth_met
     if (likely(create_result == SQC_RESULT_OK)) {
       for (uint32_t i = 0; i < loop_count; i++) {
         ret = rpc_submit_job(&session, priority, qprogram, circuit_fmt, shots,
-                             qc_type, transpiler, remark, user_token, &job_id,
-                             thread_id, i);
+                             qc_type, transpiler, remark, user_token, group_id,
+                             &job_id, thread_id, i);
         if (ret != SQC_RESULT_OK) {
           break;
         }
@@ -194,7 +202,8 @@ thread_entry(void *arg) {
 
   (void)s_subcmd_submit(args->server, args->prefer_ipv4, args->auth_method, args->conf_dir,
                         args->priority, args->qprogram, args->circuit_fmt, args->shots,
-                        args->qc_type, args->transpiler, args->remark, args->user_token,
+                        args->qc_type, args->transpiler, args->remark,
+                        args->user_token, args->group_id,
                         args->thread_id, args->loop_count);
 
   pthread_exit(NULL);
@@ -232,6 +241,7 @@ sqc_result_t
 subcmd_submit_main(int argc, char *argv[], int arg_index) {
   const char *server = getenv("SQC_RPC_SERVER");
   const char *user_token = getenv("SQC_RPC_USER_TOKEN");
+  const char *group_id = getenv("SQC_RPC_GROUP_ID");
   bool prefer_ipv4 = false;
   const char *conf_dir = default_conf_dir;
   rpc_auth_method_t auth_method = RPC_AUTH_METHOD_UNKNOWN;
@@ -344,10 +354,10 @@ subcmd_submit_main(int argc, char *argv[], int arg_index) {
   }
 
   sqc_msg_info("submit_job request: priority=%u, qprogram_file=%s, circuit_fmt=%d, "
-               "shots=%zu, qc_type=%d, transpiler=%d, remark=%s, user_token=%s, "
-               "thread_num=%d, loop_count=%d\n",
+               "shots=%zu, qc_type=%d, transpiler=%d, remark=%s, "
+               "user_token=%s, group_id=%s, thread_num=%d, loop_count=%d\n",
                priority, qprogram_file, circuit_fmt, shots, qc_type, transpiler,
-               remark, user_token, thread_num, loop_count);
+               remark, user_token, group_id, thread_num, loop_count);
 
   threads = (pthread_t *)malloc(sizeof(pthread_t) * thread_num);
   perf_args = (perf_args_t *)malloc(sizeof(perf_args_t) * thread_num);
@@ -376,6 +386,7 @@ subcmd_submit_main(int argc, char *argv[], int arg_index) {
     perf_args[i].transpiler = transpiler;
     perf_args[i].remark = remark;
     perf_args[i].user_token = user_token;
+    perf_args[i].group_id = group_id;
     perf_args[i].loop_count = loop_count;
 
     rc = pthread_create(&threads[i], NULL, thread_entry, &perf_args[i]);

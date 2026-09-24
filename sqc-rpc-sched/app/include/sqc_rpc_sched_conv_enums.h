@@ -24,3 +24,5 @@ sqc_rpc_sched_transpiler_to_string(sqc_rpc_sched_transpiler_t transpiler);
 
 const char *
 sqc_rpc_sched_job_status_to_string(sqc_rpc_sched_job_status_t status);
+
+__END_DECLS

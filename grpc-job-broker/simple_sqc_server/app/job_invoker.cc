@@ -12,7 +12,7 @@ PyJobInvoker::PyJobInvoker(const std::string& py_module, const std::string& py_f
     py_func_(nullptr),
     py_gstate_(),
     spool_dir_(spool_dir) {
-  PyGILState_STATE py_gstate_ = PyGILState_Ensure();
+  py_gstate_ = PyGILState_Ensure();
 
   try {
     py_module_ = PyImport_ImportModule(py_module.c_str());
