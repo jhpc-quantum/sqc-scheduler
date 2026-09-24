@@ -212,6 +212,7 @@ static inline void
 s_rest_invoke(const dbmgr_job_info_t ji_ptr,
               const char *base_url, const char *token,
               const uint32_t polling_interval, const uint32_t max_polling_count) {
+  char *job_id = NULL;
   char *qprogram = NULL;
   sqc_rpc_sched_circuit_fmt_t circuit_fmt;
   size_t shots = 0;
@@ -228,14 +229,21 @@ s_rest_invoke(const dbmgr_job_info_t ji_ptr,
   char *err_msg = NULL;
   size_t err_msg_len = 0;
   parsed_job_status_t parsed_status = PARSED_JOB_STATUS_UNKNOWN;
+  sqc_chrono_t job_begin_time_nsec = 0;
+  sqc_chrono_t job_end_time_nsec = 0;
+  uint64_t exec_time_msec;
 
   if (likely(dbmgr_set_job_status_running(ji_ptr) == SQC_RESULT_OK)) {
-    if (dbmgr_ji_get_qprogram(ji_ptr, &qprogram) == SQC_RESULT_OK &&
+    if (dbmgr_ji_get_job_id(ji_ptr, &job_id) == SQC_RESULT_OK &&
+        dbmgr_ji_get_qprogram(ji_ptr, &qprogram) == SQC_RESULT_OK &&
         dbmgr_ji_get_circuit_fmt(ji_ptr, &circuit_fmt) == SQC_RESULT_OK &&
         dbmgr_ji_get_qc_type(ji_ptr, &qc_type) == SQC_RESULT_OK &&
         dbmgr_ji_get_shots(ji_ptr, &shots) == SQC_RESULT_OK &&
         dbmgr_ji_get_transpiler(ji_ptr, &transpiler) == SQC_RESULT_OK &&
         dbmgr_ji_get_remark(ji_ptr, &remark) == SQC_RESULT_OK) {
+
+      // Start measuring the job execution time
+      job_begin_time_nsec = sqc_chrono_now();
 
       // submit job
       {
@@ -247,18 +255,21 @@ s_rest_invoke(const dbmgr_job_info_t ji_ptr,
                          remark, &qc_job_id, &qc_job_id_len,
                          &err_msg, &err_msg_len);
         if (ret == 0) {
-          sqc_msg_info("submit_job succeeded: %s\n", qc_job_id);
+          sqc_msg_info("submit_job succeeded: job_id=%s, qc_job_id=%s\n",
+                       job_id, qc_job_id);
 
           // Save QC job ID
           if (dbmgr_ji_set_qc_job_id(ji_ptr, qc_job_id) == SQC_RESULT_OK) {
-            sqc_msg_info("Save qc job id succeeded.\n");
+            sqc_msg_info("Save qc job id succeeded: job_id=%s, qc_job_id=%s\n",
+                         job_id, qc_job_id);
           } else {
-            sqc_msg_error("Failed to save qc job id.\n");
+            sqc_msg_error("Failed to save qc job id: job_id=%s, qc_job_id=%s\n",
+                          job_id, qc_job_id);
           }
         } else {
-          sqc_msg_error("Failed to submit_job: %s\n", err_msg);
+          sqc_msg_error("Failed to submit_job: job_id=%s, err_msg=%s\n", job_id, err_msg);
           if (dbmgr_set_job_status_error(ji_ptr) != SQC_RESULT_OK) {
-            sqc_msg_error("Failed to transition status to error.\n");
+            sqc_msg_error("Failed to transition status to error: job_id=%s\n", job_id);
           }
           goto done;
         }
@@ -272,23 +283,28 @@ s_rest_invoke(const dbmgr_job_info_t ji_ptr,
           if (likely(dbmgr_ji_get_status(ji_ptr, &db_job_status) == SQC_RESULT_OK)) {
             if (db_job_status == SQC_RPC_SCHED_JOB_STATUS_CANCELLED) {
               // execute cancel
-              ret = cancel_job(qc_type - 1, // 0: RQC, 1: IBM, 2: Slurm
+              ret = cancel_job(to_rexapis_qc_type(qc_type),
                                base_url, token, qc_job_id, &err_msg, &err_msg_len);
               if (ret == 0) {
-                  sqc_msg_info("cancel_job succeeded: %s\n", qc_job_id);
+                  sqc_msg_info("cancel_job succeeded: job_id=%s, qc_job_id=%s\n",
+                               job_id, qc_job_id);
                   goto done;
               } else {
-                  sqc_msg_error("Failed to cancel_job: %s\n", err_msg);
+                  sqc_msg_error("Failed to cancel_job: job_id=%s, qc_job_id=%s, err_msg=%s\n",
+                                job_id, qc_job_id, err_msg);
                   if (dbmgr_set_job_status_error(ji_ptr) != SQC_RESULT_OK) {
-                    sqc_msg_error("Failed to transition status to error.\n");
+                    sqc_msg_error("Failed to transition status to error: job_id=%s, qc_job_id=%s\n",
+                                  job_id, qc_job_id);
                   }
                   goto done;
               }
             }
           } else {
-            sqc_msg_error("Failed to get db job status: %s\n", qc_job_id);
+            sqc_msg_error("Failed to get db job status: job_id=%s, qc_job_id=%s\n",
+                          job_id, qc_job_id);
             if (dbmgr_set_job_status_error(ji_ptr) != SQC_RESULT_OK) {
-              sqc_msg_error("Failed to transition status to error.\n");
+              sqc_msg_error("Failed to transition status to error: job_id=%s, qc_job_id=%s\n",
+                            job_id, qc_job_id);
             }
             goto done;
           }
@@ -297,7 +313,8 @@ s_rest_invoke(const dbmgr_job_info_t ji_ptr,
                                base_url, token, qc_job_id,
                                &qc_job_status, &qc_job_status_len, &err_msg, &err_msg_len);
           if (ret == 0) {
-            sqc_msg_debug(5, "get_job_status succeeded: %s\n", qc_job_status);
+            sqc_msg_debug(5, "get_job_status succeeded: job_id=%s, qc_job_id=%s, qc_job_status=%s\n",
+                          job_id, qc_job_id, qc_job_status);
 
             // parse status of each QC
             if (qc_type == SQC_RPC_SCHED_QC_TYPE_IBM_REST) {
@@ -309,9 +326,11 @@ s_rest_invoke(const dbmgr_job_info_t ji_ptr,
                        qc_type == SQC_RPC_SCHED_QC_TYPE_A_OQTOPUSREST_BOTH_TOKEN) {
               parsed_status = s_oqtopus_status_checker(qc_job_status);
             } else {
-              sqc_msg_error("Unsupported qc: %d\n", qc_type);
+              sqc_msg_error("Unsupported qc: job_id=%s, qc_job_id=%s, qc_type=%d\n",
+                            job_id, qc_job_id, qc_type);
               if (dbmgr_set_job_status_error(ji_ptr) != SQC_RESULT_OK) {
-                sqc_msg_error("Failed to transition status to error.\n");
+                sqc_msg_error("Failed to transition status to error: job_id=%s, qc_job_id=%s\n",
+                              job_id, qc_job_id);
               }
               goto done;
             }
@@ -327,16 +346,20 @@ s_rest_invoke(const dbmgr_job_info_t ji_ptr,
               usleep(polling_interval * 1000);
               continue;
             } else {
-              sqc_msg_error("Unknown parsed status.\n");
+              sqc_msg_error("Unknown parsed status: job_id=%s, qc_job_id=%s, parsed_status=%d\n",
+                            job_id, qc_job_id, parsed_status);
               if (dbmgr_set_job_status_error(ji_ptr) != SQC_RESULT_OK) {
-                sqc_msg_error("Failed to transition status to error.\n");
+                sqc_msg_error("Failed to transition status to error: job_id=%s, qc_job_id=%s\n",
+                              job_id, qc_job_id);
               }
               goto done;
             }
           } else {
-            sqc_msg_error("Failed to get_job_status: %s\n", err_msg);
+            sqc_msg_error("Failed to get_job_status: job_id=%s, qc_job_id=%s, err_msg=%s\n",
+                          job_id, qc_job_id, err_msg);
             if (dbmgr_set_job_status_error(ji_ptr) != SQC_RESULT_OK) {
-              sqc_msg_error("Failed to transition status to error.\n");
+              sqc_msg_error("Failed to transition status to error: job_id=%s, qc_job_id=%s\n",
+                            job_id, qc_job_id);
             }
             goto done;
           }
@@ -345,21 +368,26 @@ s_rest_invoke(const dbmgr_job_info_t ji_ptr,
         // check job result
         if (qc_type == SQC_RPC_SCHED_QC_TYPE_IBM_REST) {
           if (qc_job_status != NULL && strcmp(qc_job_status, "Completed") == 0) {
-            sqc_msg_info("Job completed successfully: %s\n", qc_job_id);
+            sqc_msg_info("Job completed successfully: job_id=%s, qc_job_id=%s\n",
+                         job_id, qc_job_id);
           } else {
-            sqc_msg_error("Job execution failed: %s\n", qc_job_id);
+            sqc_msg_error("Job execution failed: job_id=%s, qc_job_id=%s\n",
+                          job_id, qc_job_id);
             if (dbmgr_set_job_status_error(ji_ptr) != SQC_RESULT_OK) {
-              sqc_msg_error("Failed to transition status to error.\n");
+              sqc_msg_error("Failed to transition status to error: job_id=%s, qc_job_id=%s\n",
+                            job_id, qc_job_id);
             }
             goto done;
           }
         } else if (qc_type == SQC_RPC_SCHED_QC_TYPE_SLURM_REST) {
           if (qc_job_status != NULL && strcmp(qc_job_status, "COMPLETED") == 0) {
-            sqc_msg_info("Job completed successfully: %s\n", qc_job_id);
+            sqc_msg_info("Job completed successfully: job_id=%s, qc_job_id=%s\n",
+                         job_id, qc_job_id);
           } else {
-            sqc_msg_error("Job execution failed: %s\n", qc_job_id);
+            sqc_msg_error("Job execution failed: job_id=%s, qc_job_id=%s\n", job_id, qc_job_id);
             if (dbmgr_set_job_status_error(ji_ptr) != SQC_RESULT_OK) {
-              sqc_msg_error("Failed to transition status to error.\n");
+              sqc_msg_error("Failed to transition status to error: job_id=%s, qc_job_id=%s\n",
+                            job_id, qc_job_id);
             }
             goto done;
           }
@@ -367,11 +395,12 @@ s_rest_invoke(const dbmgr_job_info_t ji_ptr,
                    qc_type == SQC_RPC_SCHED_QC_TYPE_A_OQTOPUSREST_USER_TOKEN ||
                    qc_type == SQC_RPC_SCHED_QC_TYPE_A_OQTOPUSREST_BOTH_TOKEN) {
           if (qc_job_status != NULL && strcmp(qc_job_status, "succeeded") == 0) {
-            sqc_msg_info("Job completed successfully: %s\n", qc_job_id);
+            sqc_msg_info("Job completed successfully: job_id=%s, qc_job_id=%s\n", job_id, qc_job_id);
           } else {
-            sqc_msg_error("Job execution failed: %s\n", qc_job_id);
+            sqc_msg_error("Job execution failed: job_id=%s, qc_job_id=%s\n", job_id, qc_job_id);
             if (dbmgr_set_job_status_error(ji_ptr) != SQC_RESULT_OK) {
-              sqc_msg_error("Failed to transition status to error.\n");
+              sqc_msg_error("Failed to transition status to error: job_id=%s, qc_job_id=%s\n",
+                            job_id, qc_job_id);
             }
             goto done;
           }
@@ -380,42 +409,74 @@ s_rest_invoke(const dbmgr_job_info_t ji_ptr,
         }
       }
 
+      // Stop measuring the job execution time
+      job_end_time_nsec = sqc_chrono_now();
+
+      // Calculate the job execution time(nano sec -> milli sec)
+      exec_time_msec = (uint64_t)((job_end_time_nsec - job_begin_time_nsec) / 1000000LL);
+      if (likely(dbmgr_ji_set_exec_time_msec(ji_ptr, exec_time_msec) == SQC_RESULT_OK)) {
+        sqc_msg_info("Save exec_time_msec succeeded: job_id=%s, qc_job_id=%s, exec_time_msec=%ld\n",
+                     job_id, qc_job_id, exec_time_msec);
+      } else {
+        sqc_msg_warning("Save exec_time_msec failed: job_id=%s, qc_job_id=%s, exec_time_msec=%ld\n",
+                        job_id, qc_job_id, exec_time_msec);
+      }
+
       // get job result
       {
         ret = get_job_result(to_rexapis_qc_type(qc_type),
                              base_url, token, qc_job_id,
                              &result, &result_len, &err_msg, &err_msg_len);
         if (ret == 0) {
-          sqc_msg_info("get_job_result succeeded: %s\n", result);
+          sqc_msg_info("get_job_result succeeded: job_id=%s, qc_job_id=%s, result_len=%ld\n",
+                       job_id, qc_job_id, result_len);
 
           // TODO: Add processing for large result sizes
           if (likely(dbmgr_ji_set_result(ji_ptr, result, result_len) == SQC_RESULT_OK)) {
-            sqc_msg_info("Save results succeeded.\n");
+            sqc_msg_info("Save results succeeded: job_id=%s, qc_job_id=%s\n", job_id, qc_job_id);
 
             if (dbmgr_set_job_status_done(ji_ptr) != SQC_RESULT_OK) {
-              sqc_msg_error("Failed to transition status to done.\n");
+              sqc_msg_error("Failed to transition status to done: job_id=%s, qc_job_id=%s\n",
+                            job_id, qc_job_id);
             }
           } else {
-            sqc_msg_error("Failed to save results.\n");
+            sqc_msg_error("Failed to save results: job_id=%s, qc_job_id=%s\n", job_id, qc_job_id);
 
             if (dbmgr_set_job_status_error(ji_ptr) != SQC_RESULT_OK) {
-              sqc_msg_error("Failed to transition status to error.\n");
+              sqc_msg_error("Failed to transition status to error: job_id=%s, qc_job_id=%s\n",
+                            job_id, qc_job_id);
             }
           }
         } else {
-          sqc_msg_error("Failed to get_job_result: %s\n", err_msg);
+          sqc_msg_error("Failed to get_job_result: job_id=%s, qc_job_id=%s, err_msg=%s\n",
+                        job_id, qc_job_id, err_msg);
           if (dbmgr_set_job_status_error(ji_ptr) != SQC_RESULT_OK) {
-            sqc_msg_error("Failed to transition status to error.\n");
+            sqc_msg_error("Failed to transition status to error: job_id=%s, qc_job_id=%s\n",
+                          job_id, qc_job_id);
           }
           goto done;
         }
       }
+    } else {
+      sqc_msg_error("Failed to get job_info for invocation: job_id=%s\n",
+                    job_id != NULL ? job_id : "(unknown)");
+      if (dbmgr_set_job_status_error(ji_ptr) != SQC_RESULT_OK) {
+        sqc_msg_error("Failed to transition status to error: job_id=%s\n",
+                      job_id != NULL ? job_id : "(unknown)");
+      }
     }
   } else {
-    sqc_msg_error("Failed to transition status to running.\n");
+    sqc_msg_error("Failed to transition status to running: job_id=%s\n", job_id);
+
+    if (dbmgr_set_job_status_error(ji_ptr) != SQC_RESULT_OK) {
+      sqc_msg_error("Failed to transition status to error: job_id=%s\n",
+                    job_id != NULL ? job_id : "(unknown)");
+    }
   }
 
 done:
+  free((void *) job_id);
+  job_id = NULL;
   free((void *) qprogram);
   qprogram = NULL;
   free((void *) remark);

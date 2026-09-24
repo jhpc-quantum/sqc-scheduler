@@ -42,7 +42,7 @@ SQLITE_MODE=${SQLITE_MODE:-""}
 SQLITE_HEADER=${SQLITE_HEADER:-"noheader"}
 
 # Aggregated SQLite option flags used by caller scripts.
-SQLITE_OPTIONS=""
+SQLITE_OPTIONS=()
 
 # ===========================================================================
 # common function

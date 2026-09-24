@@ -30,3 +30,5 @@ sqc_rpc_sched_conf_get_grpc_server_address(void);
 
 sqc_result_t
 sqc_rpc_sched_conf_set_grpc_server_address(const char *addr);
+
+__END_DECLS

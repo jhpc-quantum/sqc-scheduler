@@ -309,6 +309,7 @@ dbmgr_ui_set_user_role_type(const dbmgr_user_info_t ui_ptr, const sqc_rpc_sched_
     s_dbmgr_user_info_record_wlock(ui_ptr);
     {
       ui_ptr->role_type = role_type;
+      ui_ptr->update_time = sqc_chrono_now();
     }
     s_dbmgr_user_info_record_unlock(ui_ptr);
 
@@ -363,6 +364,7 @@ dbmgr_ui_set_user_enabled(const dbmgr_user_info_t ui_ptr) {
     s_dbmgr_user_info_record_wlock(ui_ptr);
     {
       ui_ptr->status = SQC_RPC_SCHED_USER_STATUS_ENABLED;
+      ui_ptr->update_time = sqc_chrono_now();
     }
     s_dbmgr_user_info_record_unlock(ui_ptr);
 
@@ -383,6 +385,7 @@ dbmgr_ui_set_user_disabled(const dbmgr_user_info_t ui_ptr) {
     s_dbmgr_user_info_record_wlock(ui_ptr);
     {
       ui_ptr->status = SQC_RPC_SCHED_USER_STATUS_DISABLED;
+      ui_ptr->update_time = sqc_chrono_now();
     }
     s_dbmgr_user_info_record_unlock(ui_ptr);
 

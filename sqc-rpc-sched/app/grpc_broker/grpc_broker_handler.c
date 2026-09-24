@@ -2,7 +2,7 @@
 
 #include "dbmgr.h"
 #include "job_broker_server.h"
-#include "req_sched.h"
+#include "job_sched.h"
 #include "rpc_jwt_server.h"
 #include "rpc_session_server.h"
 #include "sqc_rpc_sched_conf.h"
@@ -91,11 +91,10 @@ s_grpc_broker_get_user_status(const char *subject, bool *enabled, bool *admin) {
 static int64_t
 s_grpc_broker_handler_submit_job(const char *token, uint32_t priority, const char *qprogram,
                                  int circuit_fmt, size_t shots, int qc_type, int transpiler,
-                                 const char *remark, const char *user_token,
+                                 const char *remark, const char *user_token, const char *group_id,
                                  char **job_id, char **reply_msg) {
   static const char* log_prefix = "gRPC-SUBMIT_JOB";
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
-  dbmgr_job_info_t ji_ptr = NULL;
   char *subject = NULL;
   bool is_user_enabled = false;
 
@@ -108,26 +107,16 @@ s_grpc_broker_handler_submit_job(const char *token, uint32_t priority, const cha
         rc = s_grpc_broker_get_user_status(subject, &is_user_enabled, NULL);
         if (rc == SQC_RESULT_OK) {
           if (is_user_enabled) {
-            rc = dbmgr_ji_create_job(subject, (uint8_t) priority, qprogram, circuit_fmt,
-                                     shots, qc_type, transpiler, remark, user_token,
-                                     &ji_ptr);
+            const char *parsed_group_id = (IS_VALID_STRING(group_id) == true)
+                                        ? group_id
+                                        : SQC_RPC_SCHED_DEFAULT_GROUP_ID;
+
+            rc = job_sched_submit_job(subject, parsed_group_id, (uint8_t) priority,
+                                      qprogram, circuit_fmt, shots,
+                                      qc_type, transpiler, remark, user_token,
+                                      job_id, reply_msg);
             if (rc == SQC_RESULT_OK) {
-              rc = dbmgr_ji_get_job_id(ji_ptr, job_id);
-              if (rc == SQC_RESULT_OK) {
-                sqc_msg_debug(5, "%s: Created the job: job_id=%s\n", log_prefix, *job_id);
-                rc = req_sched_enqueue(ji_ptr);
-                if (rc == SQC_RESULT_OK) {
-                  sqc_msg_info("%s: Submitted: job_id=%s\n", log_prefix, *job_id);
-                } else  {
-                  s_grpc_create_message_text(reply_msg, "Failed to enqueue the job, %s: job_id=%s",
-                                             sqc_error_get_string(rc), *job_id);
-                  s_grpc_log_error_msg(log_prefix, *reply_msg);
-                }
-              } else {
-                s_grpc_create_message_text(reply_msg, "Failed to get a created job ID, %s",
-                                           sqc_error_get_string(rc));
-                s_grpc_log_error_msg(log_prefix, *reply_msg);
-              }
+              sqc_msg_info("%s: Submitted: job_id=%s\n", log_prefix, *job_id);
             } else {
               s_grpc_create_message_text(reply_msg, "Failed to create a job, %s",
                                          sqc_error_get_string(rc));
@@ -623,6 +612,7 @@ s_grpc_broker_handler_adm_add_user(const char *token, const char* user_id, char 
   bool is_user_enabled = false;
   bool is_user_admin = false;
   dbmgr_user_info_t user_info = NULL;
+  dbmgr_group_info_t group_info = NULL;
 
   do {
     rpc_jwt_server_ctx_t *jwt_ctx = srvsession_get_jwt_ctx();
@@ -684,6 +674,25 @@ s_grpc_broker_handler_adm_add_user(const char *token, const char* user_id, char 
       s_grpc_log_error_msg(log_prefix, *reply_msg);
       break;
     }
+
+    rc = dbmgr_gi_group_find(SQC_RPC_SCHED_DEFAULT_GROUP_ID, &group_info);
+    if (rc != SQC_RESULT_OK) {
+      s_grpc_create_message_text(reply_msg,
+                                 "Failed to add the user to the default group, %s: user=%s, group_id=%s",
+                                 sqc_error_get_string(rc), user_id, SQC_RPC_SCHED_DEFAULT_GROUP_ID);
+      s_grpc_log_error_msg(log_prefix, *reply_msg);
+      break;
+    }
+
+    rc = dbmgr_ugi_add_user_to_group(user_id, SQC_RPC_SCHED_DEFAULT_GROUP_ID);
+    if (rc != SQC_RESULT_OK) {
+      s_grpc_create_message_text(reply_msg,
+                                 "Failed to add the user to the default group, %s: user=%s, group_id=%s",
+                                 sqc_error_get_string(rc), user_id, SQC_RPC_SCHED_DEFAULT_GROUP_ID);
+      s_grpc_log_error_msg(log_prefix, *reply_msg);
+      break;
+    }
+
     rc = SQC_RESULT_OK;
     s_grpc_create_message_text(reply_msg, "Added: user=%s", user_id);
     s_grpc_log_info_msg(log_prefix, *reply_msg);
@@ -771,6 +780,215 @@ s_grpc_broker_handler_adm_set_user_status(const char *token, const char* user_id
 }
 
 
+static int64_t
+s_grpc_broker_handler_adm_set_group_exec_time_limit(const char *token, const char *group_id,
+                                                    uint64_t exec_time_limit, char **reply_msg) {
+  static const char* log_prefix = "gRPC-ADM_SET_GROUP_EXEC_TIME_LIMIT";
+  sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
+  char *subject = NULL;
+  bool is_user_enabled = false;
+  bool is_user_admin = false;
+  dbmgr_group_info_t group_info = NULL;
+
+  do {
+    rpc_jwt_server_ctx_t *jwt_ctx = srvsession_get_jwt_ctx();
+    if (jwt_ctx == NULL) {
+      rc = SQC_RESULT_AUTHENTICATION_ERROR;
+      s_grpc_create_message_text(reply_msg, "Failed to get JWT context");
+      s_grpc_log_error_msg(log_prefix, *reply_msg);
+      break;
+    }
+
+    rc = rpc_jwt_server_validate_token(jwt_ctx, token, rpc_session_server_issue_connection_id(),
+                                       &subject);
+    if (rc != SQC_RESULT_OK) {
+      rc = SQC_RESULT_AUTHENTICATION_ERROR;
+      s_grpc_create_message_text(reply_msg, "Failed to verify the JWT token, %s",
+                                 sqc_error_get_string(rc));
+      s_grpc_log_error_msg(log_prefix, *reply_msg);
+      break;
+    }
+
+    rc = s_grpc_broker_get_user_status(subject, &is_user_enabled, &is_user_admin);
+    if (rc != SQC_RESULT_OK) {
+      s_grpc_create_message_text(reply_msg, "Failed to get user status, %s: user=%s",
+                                 sqc_error_get_string(rc), subject);
+      s_grpc_log_error_msg(log_prefix, *reply_msg);
+      rc = SQC_RESULT_ANY_RUNTIME_ERROR;
+      break;
+    }
+
+    if (!is_user_admin) {
+      rc = SQC_RESULT_NOT_ADMIN_USER;
+      s_grpc_create_message_text(reply_msg, "Requested by the non-administrator user: user=%s", subject);
+      s_grpc_log_error_msg(log_prefix, *reply_msg);
+      break;
+    } else if (!is_user_enabled) {
+      rc = SQC_RESULT_DISABLED_USER;
+      s_grpc_create_message_text(reply_msg, "Requested by the disabled user: user=%s", subject);
+      s_grpc_log_error_msg(log_prefix, *reply_msg);
+      break;
+    }
+
+    if (exec_time_limit > (uint64_t) INT64_MAX / SQC_RPC_SCHED_EXEC_TIME_LIMIT_HOUR_SCALE) {
+      s_grpc_create_message_text(reply_msg, "Executable time limit is too large: group_id=%s", group_id);
+      s_grpc_log_error_msg(log_prefix, *reply_msg);
+      rc = SQC_RESULT_INVALID_ARGS;
+      break;
+    }
+
+    rc = dbmgr_gi_group_find(group_id, &group_info);
+    if (rc != SQC_RESULT_OK) {
+      s_grpc_create_message_text(reply_msg, "Failed to get information of the group, %s: group_id=%s",
+                                 sqc_error_get_string(rc), group_id);
+      s_grpc_log_error_msg(log_prefix, *reply_msg);
+      rc = SQC_RESULT_ANY_RUNTIME_ERROR;
+      break;
+    }
+
+    rc = dbmgr_gi_set_exec_time_limit_msec(group_info,
+                                           (exec_time_limit * SQC_RPC_SCHED_EXEC_TIME_LIMIT_HOUR_SCALE));
+    if (rc != SQC_RESULT_OK) {
+      s_grpc_create_message_text(reply_msg, "Failed to set group exec_time_limit, %s: group_id=%s",
+                                 sqc_error_get_string(rc), group_id);
+      s_grpc_log_error_msg(log_prefix, *reply_msg);
+      rc = SQC_RESULT_ANY_RUNTIME_ERROR;
+      break;
+    }
+    s_grpc_create_message_text(reply_msg, "Set exec_time_limit: group_id=%s, exec_time_limit=%ld",
+                               group_id, exec_time_limit);
+    s_grpc_log_info_msg(log_prefix, *reply_msg);
+    rc = SQC_RESULT_OK;
+  } while (0);
+
+  free(subject);
+  return rc;
+}
+
+
+static int64_t
+s_grpc_broker_handler_adm_set_user_group_status(const char *token, const char *user_id,
+                                                const char *group_id, bool enabled, char **reply_msg) {
+  static const char* log_prefix = "gRPC-ADM_SET_USER_GROUP_STATUS";
+  sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
+  char *subject = NULL;
+  bool is_user_enabled = false;
+  bool is_user_admin = false;
+  dbmgr_user_info_t user_info = NULL;
+  dbmgr_group_info_t group_info = NULL;
+  dbmgr_user_group_info_t user_group_info = NULL;
+
+  do {
+    rpc_jwt_server_ctx_t *jwt_ctx = srvsession_get_jwt_ctx();
+    if (jwt_ctx == NULL) {
+      rc = SQC_RESULT_AUTHENTICATION_ERROR;
+      s_grpc_create_message_text(reply_msg, "Failed to get JWT context");
+      s_grpc_log_error_msg(log_prefix, *reply_msg);
+      break;
+    }
+
+    rc = rpc_jwt_server_validate_token(jwt_ctx, token, rpc_session_server_issue_connection_id(),
+                                       &subject);
+    if (rc != SQC_RESULT_OK) {
+      rc = SQC_RESULT_AUTHENTICATION_ERROR;
+      s_grpc_create_message_text(reply_msg, "Failed to verify the JWT token, %s",
+                                 sqc_error_get_string(rc));
+      s_grpc_log_error_msg(log_prefix, *reply_msg);
+      break;
+    }
+
+    rc = s_grpc_broker_get_user_status(subject, &is_user_enabled, &is_user_admin);
+    if (rc != SQC_RESULT_OK) {
+      s_grpc_create_message_text(reply_msg, "Failed to get user status, %s: user=%s",
+                                 sqc_error_get_string(rc), subject);
+      s_grpc_log_error_msg(log_prefix, *reply_msg);
+      rc = SQC_RESULT_ANY_RUNTIME_ERROR;
+      break;
+    }
+
+    if (!is_user_admin) {
+      rc = SQC_RESULT_NOT_ADMIN_USER;
+      s_grpc_create_message_text(reply_msg, "Requested by the non-administrator user: user=%s", subject);
+      s_grpc_log_error_msg(log_prefix, *reply_msg);
+      break;
+    } else if (!is_user_enabled) {
+      rc = SQC_RESULT_DISABLED_USER;
+      s_grpc_create_message_text(reply_msg, "Requested by the disabled user: user=%s", subject);
+      s_grpc_log_error_msg(log_prefix, *reply_msg);
+      break;
+    }
+
+    if (user_id == NULL || *user_id == '\0' || group_id == NULL || *group_id == '\0') {
+      rc = SQC_RESULT_INVALID_ARGS;
+      s_grpc_create_message_text(reply_msg, "Failed to set user-group status, %s",
+                                 sqc_error_get_string(rc));
+      s_grpc_log_error_msg(log_prefix, *reply_msg);
+      break;
+    }
+
+    rc = dbmgr_ui_user_find(user_id, &user_info);
+    if (rc != SQC_RESULT_OK) {
+      s_grpc_create_message_text(reply_msg, "Failed to get information of the user, %s: user=%s",
+                                 sqc_error_get_string(rc), user_id);
+      s_grpc_log_error_msg(log_prefix, *reply_msg);
+      break;
+    }
+
+    rc = dbmgr_gi_group_find(group_id, &group_info);
+    if (rc != SQC_RESULT_OK) {
+      s_grpc_create_message_text(reply_msg, "Failed to get information of the group, %s: group_id=%s",
+                                 sqc_error_get_string(rc), group_id);
+      s_grpc_log_error_msg(log_prefix, *reply_msg);
+      break;
+    }
+
+    rc = dbmgr_ugi_user_find(user_id, group_id, &user_group_info);
+    if (rc == SQC_RESULT_NOT_FOUND) {
+      if (!enabled) {
+        s_grpc_create_message_text(reply_msg,
+                                   "Failed to set user-group status, %s: user=%s, group_id=%s",
+                                   sqc_error_get_string(rc), user_id, group_id);
+        s_grpc_log_error_msg(log_prefix, *reply_msg);
+        break;
+      }
+
+      rc = dbmgr_ugi_add_user_to_group(user_id, group_id);
+      if (rc != SQC_RESULT_OK) {
+        s_grpc_create_message_text(reply_msg,
+                                   "Failed to set user-group status, %s: user=%s, group_id=%s",
+                                   sqc_error_get_string(rc), user_id, group_id);
+        s_grpc_log_error_msg(log_prefix, *reply_msg);
+        break;
+      }
+    } else if (rc != SQC_RESULT_OK) {
+      s_grpc_create_message_text(reply_msg,
+                                 "Failed to set user-group status, %s: user=%s, group_id=%s",
+                                 sqc_error_get_string(rc), user_id, group_id);
+      s_grpc_log_error_msg(log_prefix, *reply_msg);
+      break;
+    } else {
+      rc = enabled ? dbmgr_ugi_set_user_group_enabled(user_group_info) :
+                     dbmgr_ugi_set_user_group_disabled(user_group_info);
+      if (rc != SQC_RESULT_OK) {
+        s_grpc_create_message_text(reply_msg,
+                                   "Failed to set user-group status, %s: user=%s, group_id=%s",
+                                   sqc_error_get_string(rc), user_id, group_id);
+        s_grpc_log_error_msg(log_prefix, *reply_msg);
+        break;
+      }
+    }
+
+    s_grpc_create_message_text(reply_msg, "Set status: user=%s, group_id=%s, status=%s",
+                               user_id, group_id, enabled ? "enable" : "disable");
+    s_grpc_log_info_msg(log_prefix, *reply_msg);
+    rc = SQC_RESULT_OK;
+  } while (0);
+
+  free(subject);
+  return rc;
+}
+
+
 static inline sqc_result_t
 s_grpc_broker_handler_initialize(void) {
   int64_t ret;
@@ -785,6 +1003,8 @@ s_grpc_broker_handler_initialize(void) {
   handlers.adm_del_jobs = s_grpc_broker_handler_adm_del_jobs;
   handlers.adm_add_user = s_grpc_broker_handler_adm_add_user;
   handlers.adm_set_user_status = s_grpc_broker_handler_adm_set_user_status;
+  handlers.adm_set_group_exec_time_limit = s_grpc_broker_handler_adm_set_group_exec_time_limit;
+  handlers.adm_set_user_group_status = s_grpc_broker_handler_adm_set_user_group_status;
 
   ret = sqc_job_broker_initialize(sqc_rpc_sched_conf_get_grpc_server_address(),
                                   sqc_rpc_sched_conf_get_conf_dir(),

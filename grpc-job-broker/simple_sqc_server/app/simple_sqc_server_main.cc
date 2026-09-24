@@ -77,8 +77,8 @@ bool s_authenticate(const sqc_auth::Jwt& jwt, char** reply_msg) {
 //
 static int64_t
 s_handle_submit_job(const char* token, uint32_t priority, const char* qprogram, int circuit_fmt,
-                    std::size_t shots, int qc_type, int transpiler,
-                    const char* remark, const char* user_token,
+                    std::size_t shots, int qc_type, int transpiler, const char* remark,
+                    const char* user_token, const char* group_id,
                     char** job_id, char** reply_msg) {
   static constexpr char log_prefix[] = "gRPC-SUBMIT_JOB";
 
@@ -112,7 +112,8 @@ s_handle_submit_job(const char* token, uint32_t priority, const char* qprogram, 
   }
 
   try {
-    sqc_job::Job job(sub, priority, qprogram, circuit_fmt, shots, qc_type, transpiler, remark,
+    sqc_job::Job job(sub, (group_id != nullptr && *group_id != '\0') ? group_id : "default",
+                     priority, qprogram, circuit_fmt, shots, qc_type, transpiler, remark,
                      user_token ? std::optional<std::string>(user_token) : std::nullopt);
     s_job_manager_ptr->submit_job(job);
     *job_id = strdup(job.id().c_str());
@@ -421,6 +422,80 @@ s_handle_adm_set_user_status(const char* token, const char* user_id, bool enable
 }
 
 //
+// Set group's execution time limit.
+//
+static int64_t
+s_handle_adm_set_group_exec_time_limit(const char* token, const char* group_id, uint64_t exec_time_limit,
+                                       char** reply_msg) {
+  static constexpr char log_prefix[] = "gRPC-ADM_SET_GROUP_EXEC_TIME_LIMIT";
+  (void) exec_time_limit;
+
+  // Check arguments.
+  if (token == nullptr || group_id == nullptr || reply_msg == nullptr) {
+    s_create_message_text(reply_msg, "Invalid arguments");
+    msg_error_with_prefix(log_prefix, *reply_msg);
+    return RESULT_INVALID_ARGS;
+  }
+
+  // Validate the token.
+  std::string sub;
+  try {
+    sqc_auth::Jwt jwt = sqc_auth::Jwt(token);
+    sub = jwt.sub();
+    if (!s_authenticate(jwt, reply_msg)) {
+      s_create_message_text(reply_msg, "Authentication failed: user=%s", sub.c_str());
+      msg_error_with_prefix(log_prefix, *reply_msg);
+      return RESULT_AUTHENTICATION_ERROR;
+    }
+  } catch (const std::exception& e) {
+    s_create_message_text(reply_msg, "An exception is thrown: %s", e.what());
+    msg_error_with_prefix(log_prefix, *reply_msg);
+    return RESULT_ANY_RUNTIME_ERROR;
+  }
+
+  s_create_message_text(reply_msg, "Unsupported");
+  msg_error_with_prefix(log_prefix, *reply_msg);
+  return RESULT_UNSUPPORTED;
+}
+
+//
+// Set user's group status.
+//
+static int64_t
+s_handle_adm_set_user_group_status(const char* token, const char* user_id, const char* group_id, bool enabled,
+                                   char** reply_msg) {
+  static constexpr char log_prefix[] = "gRPC-ADM_SET_USER_GROUP_STATUS";
+  (void) enabled;
+
+  // Check arguments.
+  if (token == nullptr || user_id == nullptr || group_id == nullptr || reply_msg == nullptr) {
+    s_create_message_text(reply_msg, "Invalid arguments");
+    msg_error_with_prefix(log_prefix, *reply_msg);
+    return RESULT_INVALID_ARGS;
+  }
+
+  // Validate the token.
+  std::string sub;
+  try {
+    sqc_auth::Jwt jwt = sqc_auth::Jwt(token);
+    sub = jwt.sub();
+    if (!s_authenticate(jwt, reply_msg)) {
+      s_create_message_text(reply_msg, "Authentication failed: user=%s", sub.c_str());
+      msg_error_with_prefix(log_prefix, *reply_msg);
+      return RESULT_AUTHENTICATION_ERROR;
+    }
+  } catch (const std::exception& e) {
+    s_create_message_text(reply_msg, "An exception is thrown: %s", e.what());
+    msg_error_with_prefix(log_prefix, *reply_msg);
+    return RESULT_ANY_RUNTIME_ERROR;
+  }
+
+  s_create_message_text(reply_msg, "Unsupported");
+  msg_error_with_prefix(log_prefix, *reply_msg);
+  return RESULT_UNSUPPORTED;
+}
+
+//
 // Entry point of job invoker thread.
 //
 static void
@@ -581,6 +656,8 @@ main(int argc, char* argv[]) {
   job_broker_handlers.adm_del_jobs = s_handle_adm_del_jobs;
   job_broker_handlers.adm_add_user = s_handle_adm_add_user;
   job_broker_handlers.adm_set_user_status = s_handle_adm_set_user_status;
+  job_broker_handlers.adm_set_group_exec_time_limit = s_handle_adm_set_group_exec_time_limit;
+  job_broker_handlers.adm_set_user_group_status = s_handle_adm_set_user_group_status;
 
   // Set up user database.
   sqc_auth::UserDB user_db;
@@ -618,13 +695,11 @@ main(int argc, char* argv[]) {
   if (sqc_job_broker_initialize(url.c_str(), conf_dir.c_str(), &job_broker_handlers,
                                 num_cqs, min_pollers, max_pollers, cq_timeout_msec) != RESULT_OK) {
     msg_error("failed to initialize the server\n");
-    Py_Finalize();
     return 1;
   }
 
   if (sqc_job_broker_start() != RESULT_OK) {
     msg_error("failed to start the server\n");
-    Py_Finalize();
     return 1;
   }
   sqc_job_broker_wait();

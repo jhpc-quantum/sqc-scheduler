@@ -780,7 +780,8 @@ AC_CONFIG_FILES(
 	app/grpc_broker/test/Makefile
 	app/req_invoker/Makefile
 	app/req_invoker/test/Makefile
-	app/req_sched/Makefile
+	app/job_sched/Makefile
+	app/job_sched/test/Makefile
 	app/rpc/Makefile
 	app/rpc/test_jwt/Makefile
 	app/rpc/test_munge/Makefile

@@ -32,6 +32,12 @@ bool
 parse_option_with_value(const std::string& arg, const std::string& option_name,
                         std::string& option_value);
 
+bool
+parse_uint32(const std::string& arg, std::uint32_t *value);
+
+bool
+parse_uint64(const std::string& arg, std::uint64_t *value);
+
 //
 // Creates a gRPC client.
 //
@@ -80,6 +86,12 @@ do_subcmd_adm_add_user(int argc, char* argv[], int optind);
 
 int
 do_subcmd_adm_set_user_status(int argc, char* argv[], int optind);
+
+int
+do_subcmd_adm_set_group_exec_time_limit(int argc, char* argv[], int optind);
+
+int
+do_subcmd_adm_set_user_group_status(int argc, char* argv[], int optind);
 
 int
 do_subcmd_cancel(int argc, char* argv[], int optind);

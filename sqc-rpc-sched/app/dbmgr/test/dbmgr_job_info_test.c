@@ -3,18 +3,19 @@
 
 #include "unity.h"
 
+#include "dbmgr_util.c"
 #include "dbmgr_db.c"
 #include "dbmgr_job_info.c"
 
 #include "dbmgr_db_common.c"
 
 void setUp(void) {
-  remove_db_files("setUp");
-  create_db_files("setUp");
+  remove_db_files("setUp - job_info");
+  create_db_files("setUp - job_info");
 }
 
 void tearDown(void) {
-  remove_db_files("tearDown");
+  remove_db_files("tearDown - job_info");
 }
 
 void test_job_info_initialize_finalize(void) {
@@ -44,6 +45,7 @@ void test_job_info_initialize_finalize(void) {
 void test_job_info_free_in_finalize(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
+  const char *group_id = "test-group";
   const uint8_t priority = 5;
   const char *qprogram = "test-qprogram-data";
   const sqc_rpc_sched_circuit_fmt_t circuit_fmt = SQC_RPC_SCHED_CIRCUIT_FMT_QIR;
@@ -66,7 +68,7 @@ void test_job_info_free_in_finalize(void) {
 
   // create & add record(free in finalize)
   {
-    rc = s_dbmgr_job_info_record_create(user_id, priority,
+    rc = s_dbmgr_job_info_record_create(user_id, group_id, priority,
                                         qprogram, circuit_fmt, shots,
                                         qc_type, transpiler,
                                         remark, user_token, &ji_ptr);
@@ -88,6 +90,7 @@ void test_job_info_free_in_finalize(void) {
 void test_job_info_record_create_destroy(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
+  const char *group_id = "test-group";
   const uint8_t priority = 5;
   const size_t user_id_len = strlen(user_id);
   const char *qprogram = "test-qprogram-data";
@@ -105,7 +108,7 @@ void test_job_info_record_create_destroy(void) {
 
   // create record
   {
-    rc = s_dbmgr_job_info_record_create(user_id, priority,
+    rc = s_dbmgr_job_info_record_create(user_id, group_id, priority,
                                         qprogram, circuit_fmt, shots,
                                         qc_type, transpiler,
                                         remark, user_token, &ji_ptr);
@@ -138,6 +141,7 @@ void test_job_info_record_create_destroy(void) {
 void test_job_info_record_add_delete(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
+  const char *group_id = "test-group";
   const uint8_t priority = 5;
   const char *qprogram = "test-qprogram-data";
   const sqc_rpc_sched_circuit_fmt_t circuit_fmt = SQC_RPC_SCHED_CIRCUIT_FMT_QIR;
@@ -161,7 +165,7 @@ void test_job_info_record_add_delete(void) {
 
   // create record
   {
-    rc = s_dbmgr_job_info_record_create(user_id, priority,
+    rc = s_dbmgr_job_info_record_create(user_id, group_id, priority,
                                         qprogram, circuit_fmt, shots,
                                         qc_type, transpiler,
                                         remark, user_token, &ji_ptr);
@@ -200,6 +204,7 @@ void test_job_info_record_add_delete(void) {
 void test_ji_job_create_delete(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
+  const char *group_id = "test-group";
   const uint8_t priority = 5;
   const char *qprogram = "test-qprogram-data";
   const sqc_rpc_sched_circuit_fmt_t circuit_fmt = SQC_RPC_SCHED_CIRCUIT_FMT_QIR;
@@ -222,7 +227,7 @@ void test_ji_job_create_delete(void) {
 
   // create job
   {
-    rc = dbmgr_ji_create_job(user_id, priority,
+    rc = dbmgr_ji_create_job(user_id, group_id, priority,
                              qprogram, circuit_fmt, shots,
                              qc_type, transpiler,
                              remark, user_token, &ji_ptr);
@@ -245,6 +250,7 @@ void test_ji_job_create_delete(void) {
 void test_ji_job_exists(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
+  const char *group_id = "test-group";
   const uint8_t priority = 5;
   const char *qprogram = "test-qprogram-data";
   const sqc_rpc_sched_circuit_fmt_t circuit_fmt = SQC_RPC_SCHED_CIRCUIT_FMT_QIR;
@@ -267,7 +273,7 @@ void test_ji_job_exists(void) {
 
   // create job
   {
-    rc = dbmgr_ji_create_job(user_id, priority,
+    rc = dbmgr_ji_create_job(user_id, group_id, priority,
                              qprogram, circuit_fmt, shots,
                              qc_type, transpiler,
                              remark, user_token, &ji_ptr);
@@ -299,6 +305,7 @@ void test_ji_is_deletable(void) {
   const size_t target_data_size = 7;
 
   const char *user_id = "test-user";
+  const char *group_id = "test-group";
 
   dbmgr_job_info_t ji_ptr = NULL;
 
@@ -318,7 +325,7 @@ void test_ji_is_deletable(void) {
   {
     // create target job
     for (size_t i = 0; i < target_data_size; i++) {
-      rc = dbmgr_ji_create_job(user_id, 5,
+      rc = dbmgr_ji_create_job(user_id, group_id, 5,
                                "test-qprogram-data", SQC_RPC_SCHED_CIRCUIT_FMT_QIR, 30000 + i,
                                SQC_RPC_SCHED_QC_TYPE_RQC_REST, SQC_RPC_SCHED_TRANSPILER_NORMAL,
                                "test-remark-data", "test-user_token-data", &ji_ptr);
@@ -415,6 +422,7 @@ void test_ji_is_deletable(void) {
 void test_ji_job_find(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
+  const char *group_id = "test-group";
   const uint8_t priority = 5;
   const char *qprogram = "test-qprogram-data";
   const sqc_rpc_sched_circuit_fmt_t circuit_fmt = SQC_RPC_SCHED_CIRCUIT_FMT_QIR;
@@ -439,7 +447,7 @@ void test_ji_job_find(void) {
 
   // create job
   {
-    rc = dbmgr_ji_create_job(user_id, priority,
+    rc = dbmgr_ji_create_job(user_id, group_id, priority,
                              qprogram, circuit_fmt, shots,
                              qc_type, transpiler,
                              remark, user_token, &ji_ptr);
@@ -487,6 +495,8 @@ void test_ji_job_find_by_user_id(void) {
   const char *target_user_id = "test-user";
   const char *other_user_id = "other-user";
 
+  const char *group_id = "test-group";
+
   dbmgr_job_info_t ji_ptr = NULL;
 
   dbmgr_job_info_t *actual_ji_ptr_arr = NULL;
@@ -508,7 +518,7 @@ void test_ji_job_find_by_user_id(void) {
   {
     // create target job
     for (size_t i = 0; i < target_data_size; i++) {
-      rc = dbmgr_ji_create_job(target_user_id, 5,
+      rc = dbmgr_ji_create_job(target_user_id, group_id, 5,
                                "test-qprogram-data", SQC_RPC_SCHED_CIRCUIT_FMT_QIR, 30000 + i,
                                SQC_RPC_SCHED_QC_TYPE_RQC_REST, SQC_RPC_SCHED_TRANSPILER_NORMAL,
                                "test-remark-data", "test-user_token-data", &ji_ptr);
@@ -520,7 +530,7 @@ void test_ji_job_find_by_user_id(void) {
 
     // create other job
     for (size_t i = 0; i < other_data_size; i++) {
-      rc = dbmgr_ji_create_job(other_user_id, 1,
+      rc = dbmgr_ji_create_job(other_user_id, group_id, 1,
                                "other-qprogram-data", SQC_RPC_SCHED_CIRCUIT_FMT_QIR, 50000 + i,
                                SQC_RPC_SCHED_QC_TYPE_RQC_REST, SQC_RPC_SCHED_TRANSPILER_NORMAL,
                                "other-remark-data", "other-user_token-data", &ji_ptr);
@@ -589,6 +599,7 @@ void test_ji_job_find_by_job_status(void) {
   const sqc_rpc_sched_job_status_t target_status = SQC_RPC_SCHED_JOB_STATUS_QUEUED;
 
   const char *user_id = "test-user";
+  const char *group_id = "test-group";
 
   dbmgr_job_info_t ji_ptr = NULL;
 
@@ -612,7 +623,7 @@ void test_ji_job_find_by_job_status(void) {
   {
     // create target job
     for (size_t i = 0; i < target_data_size; i++) {
-      rc = dbmgr_ji_create_job(user_id, 5,
+      rc = dbmgr_ji_create_job(user_id, group_id, 5,
                                "test-qprogram-data", SQC_RPC_SCHED_CIRCUIT_FMT_QIR, 30000 + i,
                                SQC_RPC_SCHED_QC_TYPE_RQC_REST, SQC_RPC_SCHED_TRANSPILER_NORMAL,
                                "test-remark-data", "test-user_token-data", &ji_ptr);
@@ -627,7 +638,7 @@ void test_ji_job_find_by_job_status(void) {
 
     // create other job
     for (size_t i = 0; i < other_data_size; i++) {
-      rc = dbmgr_ji_create_job(user_id, 1,
+      rc = dbmgr_ji_create_job(user_id, group_id, 1,
                                "other-qprogram-data", SQC_RPC_SCHED_CIRCUIT_FMT_QIR, 50000 + i,
                                SQC_RPC_SCHED_QC_TYPE_RQC_REST, SQC_RPC_SCHED_TRANSPILER_NORMAL,
                                "other-remark-data", "other-user_token-data", &ji_ptr);
@@ -756,6 +767,8 @@ void test_ji_job_find_by_created_time(void) {
   const char *user_id = "test-user";
   const char *other_user_id = "other-user";
 
+  const char *group_id = "test-group";
+
   dbmgr_job_info_t ji_ptr = NULL;
 
   sqc_chrono_t target_from_time = sqc_chrono_now();
@@ -780,7 +793,7 @@ void test_ji_job_find_by_created_time(void) {
   {
     // create target job
     for (size_t i = 0; i < target_data_size; i++) {
-      rc = dbmgr_ji_create_job(user_id, 5,
+      rc = dbmgr_ji_create_job(user_id, group_id, 5,
                                "test-qprogram-data", SQC_RPC_SCHED_CIRCUIT_FMT_QIR, 30000 + i,
                                SQC_RPC_SCHED_QC_TYPE_RQC_REST, SQC_RPC_SCHED_TRANSPILER_NORMAL,
                                "test-remark-data", "test-user_token-data", &ji_ptr);
@@ -799,7 +812,7 @@ void test_ji_job_find_by_created_time(void) {
 
     // create other job
     for (size_t i = 0; i < other_data_size; i++) {
-      rc = dbmgr_ji_create_job(other_user_id, 1,
+      rc = dbmgr_ji_create_job(other_user_id, group_id, 1,
                                "other-qprogram-data", SQC_RPC_SCHED_CIRCUIT_FMT_QIR, 50000 + i,
                                SQC_RPC_SCHED_QC_TYPE_RQC_REST, SQC_RPC_SCHED_TRANSPILER_NORMAL,
                                "other-remark-data", "other-user_token-data", &ji_ptr);
@@ -869,6 +882,8 @@ void test_ji_job_find_by_delete_target(void) {
   const char *target_user_id = "test-user";
   const char *other_user_id = "other-user";
 
+  const char *group_id = "test-group";
+
   dbmgr_job_info_t ji_ptr = NULL;
 
   sqc_chrono_t target_from_time = sqc_chrono_now();
@@ -893,7 +908,7 @@ void test_ji_job_find_by_delete_target(void) {
   {
     // create target job
     for (size_t i = 0; i < target_data_size; i++) {
-      rc = dbmgr_ji_create_job(target_user_id, 5,
+      rc = dbmgr_ji_create_job(target_user_id, group_id, 5,
                                "test-qprogram-data", SQC_RPC_SCHED_CIRCUIT_FMT_QIR, 30000 + i,
                                SQC_RPC_SCHED_QC_TYPE_RQC_REST, SQC_RPC_SCHED_TRANSPILER_NORMAL,
                                "test-remark-data", "test-user_token-data", &ji_ptr);
@@ -926,7 +941,7 @@ void test_ji_job_find_by_delete_target(void) {
 
     // create other job
     for (size_t i = 0; i < other_data_size; i++) {
-      rc = dbmgr_ji_create_job(other_user_id, 1,
+      rc = dbmgr_ji_create_job(other_user_id, group_id, 1,
                                "other-qprogram-data", SQC_RPC_SCHED_CIRCUIT_FMT_QIR, 50000 + i,
                                SQC_RPC_SCHED_QC_TYPE_RQC_REST, SQC_RPC_SCHED_TRANSPILER_NORMAL,
                                "other-remark-data", "other-user_token-data", &ji_ptr);
@@ -1025,6 +1040,8 @@ void test_ji_job_find_by_delete_target_all(void) {
   const size_t target_base_shots = 30000;
   const size_t other_shots = 50000;
 
+  const char *group_id = "test-group";
+
   dbmgr_job_info_t ji_ptr = NULL;
 
   sqc_chrono_t target_from_time = sqc_chrono_now();
@@ -1050,7 +1067,7 @@ void test_ji_job_find_by_delete_target_all(void) {
   {
     // create target job
     for (size_t i = 0; i < target_data_size; i++) {
-      rc = dbmgr_ji_create_job(target_user_id_arr[i], 5,
+      rc = dbmgr_ji_create_job(target_user_id_arr[i], group_id, 5,
                                "test-qprogram-data", SQC_RPC_SCHED_CIRCUIT_FMT_QIR, target_base_shots + i,
                                SQC_RPC_SCHED_QC_TYPE_RQC_REST, SQC_RPC_SCHED_TRANSPILER_NORMAL,
                                "test-remark-data", "test-user_token-data", &ji_ptr);
@@ -1083,7 +1100,7 @@ void test_ji_job_find_by_delete_target_all(void) {
 
     // create other job
     for (size_t i = 0; i < other_data_size; i++) {
-      rc = dbmgr_ji_create_job(other_user_id, 1,
+      rc = dbmgr_ji_create_job(other_user_id, group_id, 1,
                                "other-qprogram-data", SQC_RPC_SCHED_CIRCUIT_FMT_QIR, other_shots + i,
                                SQC_RPC_SCHED_QC_TYPE_RQC_REST, SQC_RPC_SCHED_TRANSPILER_NORMAL,
                                "other-remark-data", "other-user_token-data", &ji_ptr);
@@ -1171,6 +1188,7 @@ void test_ji_job_find_by_delete_target_all(void) {
 void test_ji_get_job_id(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
+  const char *group_id = "test-group";
   const uint8_t priority = 5;
   const char *qprogram = "test-qprogram-data";
   const sqc_rpc_sched_circuit_fmt_t circuit_fmt = SQC_RPC_SCHED_CIRCUIT_FMT_QIR;
@@ -1195,7 +1213,7 @@ void test_ji_get_job_id(void) {
 
   // create job
   {
-    rc = dbmgr_ji_create_job(user_id, priority,
+    rc = dbmgr_ji_create_job(user_id, group_id, priority,
                              qprogram, circuit_fmt, shots,
                              qc_type, transpiler,
                              remark, user_token, &ji_ptr);
@@ -1232,6 +1250,7 @@ void test_ji_get_job_id(void) {
 void test_ji_get_user_id(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
+  const char *group_id = "test-group";
   const uint8_t priority = 5;
   const char *qprogram = "test-qprogram-data";
   const sqc_rpc_sched_circuit_fmt_t circuit_fmt = SQC_RPC_SCHED_CIRCUIT_FMT_QIR;
@@ -1255,7 +1274,7 @@ void test_ji_get_user_id(void) {
 
   // create job
   {
-    rc = dbmgr_ji_create_job(user_id, priority,
+    rc = dbmgr_ji_create_job(user_id, group_id, priority,
                              qprogram, circuit_fmt, shots,
                              qc_type, transpiler,
                              remark, user_token, &ji_ptr);
@@ -1289,6 +1308,7 @@ void test_ji_get_user_id_len(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
   const size_t user_id_len = strlen(user_id);
+  const char *group_id = "test-group";
   const uint8_t priority = 5;
   const char *qprogram = "test-qprogram-data";
   const sqc_rpc_sched_circuit_fmt_t circuit_fmt = SQC_RPC_SCHED_CIRCUIT_FMT_QIR;
@@ -1312,7 +1332,7 @@ void test_ji_get_user_id_len(void) {
 
   // create job
   {
-    rc = dbmgr_ji_create_job(user_id, priority,
+    rc = dbmgr_ji_create_job(user_id, group_id, priority,
                              qprogram, circuit_fmt, shots,
                              qc_type, transpiler,
                              remark, user_token, &ji_ptr);
@@ -1339,9 +1359,122 @@ void test_ji_get_user_id_len(void) {
   TEST_ASSERT_NULL(sqc_rpc_sched_db);
 }
 
+void test_ji_get_group_id(void) {
+  sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
+  const char *user_id = "test-user";
+  const char *group_id = "test-group";
+  const uint8_t priority = 5;
+  const char *qprogram = "test-qprogram-data";
+  const sqc_rpc_sched_circuit_fmt_t circuit_fmt = SQC_RPC_SCHED_CIRCUIT_FMT_QIR;
+  const size_t shots = 30000;
+  const sqc_rpc_sched_qc_type_t qc_type = SQC_RPC_SCHED_QC_TYPE_RQC_REST;
+  const sqc_rpc_sched_transpiler_t transpiler = SQC_RPC_SCHED_TRANSPILER_NORMAL;
+  const char *remark = "test-remark-data";
+  const char *user_token = "test-user_token-data";
+  dbmgr_job_info_t ji_ptr = NULL;
+  char *actual_group_id = NULL;
+
+  // initialize
+  {
+    rc = s_dbmgr_db_initialize(SQC_RPC_SCHED_UT_DB_FILE);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+    TEST_ASSERT_NOT_NULL(sqc_rpc_sched_db);
+
+    rc = s_dbmgr_job_info_initialize();
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+  }
+
+  // create job
+  {
+    rc = dbmgr_ji_create_job(user_id, group_id, priority,
+                             qprogram, circuit_fmt, shots,
+                             qc_type, transpiler,
+                             remark, user_token, &ji_ptr);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+  }
+
+  // get group_id
+  {
+    rc = dbmgr_ji_get_group_id(ji_ptr, &actual_group_id);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+    TEST_ASSERT_EQUAL_STRING(group_id, actual_group_id);
+
+    free((void *) actual_group_id);
+    actual_group_id = NULL;
+  }
+
+  // delete job
+  {
+    rc = dbmgr_ji_delete_job(ji_ptr->job_id);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+  }
+
+  // finalize
+  s_dbmgr_job_info_finalize();
+
+  s_dbmgr_db_finalize();
+  TEST_ASSERT_NULL(sqc_rpc_sched_db);
+}
+
+void test_ji_get_group_id_len(void) {
+  sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
+  const char *user_id = "test-user";
+  const char *group_id = "test-group";
+  const size_t group_id_len = strlen(group_id);
+  const uint8_t priority = 5;
+  const char *qprogram = "test-qprogram-data";
+  const sqc_rpc_sched_circuit_fmt_t circuit_fmt = SQC_RPC_SCHED_CIRCUIT_FMT_QIR;
+  const size_t shots = 30000;
+  const sqc_rpc_sched_qc_type_t qc_type = SQC_RPC_SCHED_QC_TYPE_RQC_REST;
+  const sqc_rpc_sched_transpiler_t transpiler = SQC_RPC_SCHED_TRANSPILER_NORMAL;
+  const char *remark = "test-remark-data";
+  const char *user_token = "test-user_token-data";
+  dbmgr_job_info_t ji_ptr = NULL;
+  size_t actual_group_id_len = 0;
+
+  // initialize
+  {
+    rc = s_dbmgr_db_initialize(SQC_RPC_SCHED_UT_DB_FILE);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+    TEST_ASSERT_NOT_NULL(sqc_rpc_sched_db);
+
+    rc = s_dbmgr_job_info_initialize();
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+  }
+
+  // create job
+  {
+    rc = dbmgr_ji_create_job(user_id, group_id, priority,
+                             qprogram, circuit_fmt, shots,
+                             qc_type, transpiler,
+                             remark, user_token, &ji_ptr);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+  }
+
+  // get group_id_len
+  {
+    rc = dbmgr_ji_get_group_id_len(ji_ptr, &actual_group_id_len);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+    TEST_ASSERT_EQUAL(group_id_len, actual_group_id_len);
+  }
+
+  // delete job
+  {
+    rc = dbmgr_ji_delete_job(ji_ptr->job_id);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+  }
+
+  // finalize
+  s_dbmgr_job_info_finalize();
+
+  s_dbmgr_db_finalize();
+  TEST_ASSERT_NULL(sqc_rpc_sched_db);
+}
+
 void test_ji_get_priority(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
+  const char *group_id = "test-group";
   const uint8_t priority = 5;
   const char *qprogram = "test-qprogram-data";
   const sqc_rpc_sched_circuit_fmt_t circuit_fmt = SQC_RPC_SCHED_CIRCUIT_FMT_QIR;
@@ -1365,7 +1498,7 @@ void test_ji_get_priority(void) {
 
   // create job
   {
-    rc = dbmgr_ji_create_job(user_id, priority,
+    rc = dbmgr_ji_create_job(user_id, group_id, priority,
                              qprogram, circuit_fmt, shots,
                              qc_type, transpiler,
                              remark, user_token, &ji_ptr);
@@ -1395,6 +1528,7 @@ void test_ji_get_priority(void) {
 void test_ji_set_get_status(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
+  const char *group_id = "test-group";
   const uint8_t priority = 5;
   const char *qprogram = "test-qprogram-data";
   const sqc_rpc_sched_circuit_fmt_t circuit_fmt = SQC_RPC_SCHED_CIRCUIT_FMT_QIR;
@@ -1421,7 +1555,7 @@ void test_ji_set_get_status(void) {
 
   // create job
   {
-    rc = dbmgr_ji_create_job(user_id, priority,
+    rc = dbmgr_ji_create_job(user_id, group_id, priority,
                              qprogram, circuit_fmt, shots,
                              qc_type, transpiler,
                              remark, user_token, &ji_ptr);
@@ -1484,6 +1618,7 @@ void test_ji_set_get_status(void) {
 void test_ji_set_get_status_cancelled(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
+  const char *group_id = "test-group";
   const uint8_t priority = 5;
   const char *qprogram = "test-qprogram-data";
   const sqc_rpc_sched_circuit_fmt_t circuit_fmt = SQC_RPC_SCHED_CIRCUIT_FMT_QIR;
@@ -1507,7 +1642,7 @@ void test_ji_set_get_status_cancelled(void) {
 
   // create job
   {
-    rc = dbmgr_ji_create_job(user_id, priority,
+    rc = dbmgr_ji_create_job(user_id, group_id, priority,
                              qprogram, circuit_fmt, shots,
                              qc_type, transpiler,
                              remark, user_token, &ji_ptr);
@@ -1547,6 +1682,7 @@ void test_ji_set_get_status_cancelled(void) {
 void test_ji_set_get_status_error(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
+  const char *group_id = "test-group";
   const uint8_t priority = 5;
   const char *qprogram = "test-qprogram-data";
   const sqc_rpc_sched_circuit_fmt_t circuit_fmt = SQC_RPC_SCHED_CIRCUIT_FMT_QIR;
@@ -1570,7 +1706,7 @@ void test_ji_set_get_status_error(void) {
 
   // create job
   {
-    rc = dbmgr_ji_create_job(user_id, priority,
+    rc = dbmgr_ji_create_job(user_id, group_id, priority,
                              qprogram, circuit_fmt, shots,
                              qc_type, transpiler,
                              remark, user_token, &ji_ptr);
@@ -1611,6 +1747,7 @@ void test_ji_set_get_status_error(void) {
 void test_ji_set_get_qc_job_id(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
+  const char *group_id = "test-group";
   const uint8_t priority = 5;
   const char *qc_job_id = "test-qc-job";
   const size_t qc_job_id_len = strlen(qc_job_id);
@@ -1637,7 +1774,7 @@ void test_ji_set_get_qc_job_id(void) {
 
   // create job
   {
-    rc = dbmgr_ji_create_job(user_id, priority,
+    rc = dbmgr_ji_create_job(user_id, group_id, priority,
                              qprogram, circuit_fmt, shots,
                              qc_type, transpiler,
                              remark, user_token, &ji_ptr);
@@ -1677,6 +1814,7 @@ void test_ji_set_get_qc_job_id(void) {
 void test_ji_get_qprogram(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
+  const char *group_id = "test-group";
   const uint8_t priority = 5;
   const char *qprogram = "test-qprogram-data";
   const sqc_rpc_sched_circuit_fmt_t circuit_fmt = SQC_RPC_SCHED_CIRCUIT_FMT_QIR;
@@ -1700,7 +1838,7 @@ void test_ji_get_qprogram(void) {
 
   // create job
   {
-    rc = dbmgr_ji_create_job(user_id, priority,
+    rc = dbmgr_ji_create_job(user_id, group_id, priority,
                              qprogram, circuit_fmt, shots,
                              qc_type, transpiler,
                              remark, user_token, &ji_ptr);
@@ -1733,6 +1871,7 @@ void test_ji_get_qprogram(void) {
 void test_ji_get_qprogram_len(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
+  const char *group_id = "test-group";
   const uint8_t priority = 5;
   const char *qprogram = "test-qprogram-data";
   const size_t qprogram_len = strlen(qprogram);
@@ -1757,7 +1896,7 @@ void test_ji_get_qprogram_len(void) {
 
   // create job
   {
-    rc = dbmgr_ji_create_job(user_id, priority,
+    rc = dbmgr_ji_create_job(user_id, group_id, priority,
                              qprogram, circuit_fmt, shots,
                              qc_type, transpiler,
                              remark, user_token, &ji_ptr);
@@ -1787,6 +1926,7 @@ void test_ji_get_qprogram_len(void) {
 void test_ji_get_circuit_fmt(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
+  const char *group_id = "test-group";
   const uint8_t priority = 5;
   const char *qprogram = "test-qprogram-data";
   const sqc_rpc_sched_circuit_fmt_t circuit_fmt = SQC_RPC_SCHED_CIRCUIT_FMT_QIR;
@@ -1810,7 +1950,7 @@ void test_ji_get_circuit_fmt(void) {
 
   // create job
   {
-    rc = dbmgr_ji_create_job(user_id, priority,
+    rc = dbmgr_ji_create_job(user_id, group_id, priority,
                              qprogram, circuit_fmt, shots,
                              qc_type, transpiler,
                              remark, user_token, &ji_ptr);
@@ -1840,6 +1980,7 @@ void test_ji_get_circuit_fmt(void) {
 void test_ji_get_shots(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
+  const char *group_id = "test-group";
   const uint8_t priority = 5;
   const char *qprogram = "test-qprogram-data";
   const sqc_rpc_sched_circuit_fmt_t circuit_fmt = SQC_RPC_SCHED_CIRCUIT_FMT_QIR;
@@ -1863,7 +2004,7 @@ void test_ji_get_shots(void) {
 
   // create job
   {
-    rc = dbmgr_ji_create_job(user_id, priority,
+    rc = dbmgr_ji_create_job(user_id, group_id, priority,
                              qprogram, circuit_fmt, shots,
                              qc_type, transpiler,
                              remark, user_token, &ji_ptr);
@@ -1893,6 +2034,7 @@ void test_ji_get_shots(void) {
 void test_ji_get_qc_type(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
+  const char *group_id = "test-group";
   const uint8_t priority = 5;
   const char *qprogram = "test-qprogram-data";
   const sqc_rpc_sched_circuit_fmt_t circuit_fmt = SQC_RPC_SCHED_CIRCUIT_FMT_QIR;
@@ -1916,7 +2058,7 @@ void test_ji_get_qc_type(void) {
 
   // create job
   {
-    rc = dbmgr_ji_create_job(user_id, priority,
+    rc = dbmgr_ji_create_job(user_id, group_id, priority,
                              qprogram, circuit_fmt, shots,
                              qc_type, transpiler,
                              remark, user_token, &ji_ptr);
@@ -1946,6 +2088,7 @@ void test_ji_get_qc_type(void) {
 void test_ji_get_transpiler(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
+  const char *group_id = "test-group";
   const uint8_t priority = 5;
   const char *qprogram = "test-qprogram-data";
   const sqc_rpc_sched_circuit_fmt_t circuit_fmt = SQC_RPC_SCHED_CIRCUIT_FMT_QIR;
@@ -1969,7 +2112,7 @@ void test_ji_get_transpiler(void) {
 
   // create job
   {
-    rc = dbmgr_ji_create_job(user_id, priority,
+    rc = dbmgr_ji_create_job(user_id, group_id, priority,
                              qprogram, circuit_fmt, shots,
                              qc_type, transpiler,
                              remark, user_token, &ji_ptr);
@@ -1999,6 +2142,7 @@ void test_ji_get_transpiler(void) {
 void test_ji_get_remark(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
+  const char *group_id = "test-group";
   const uint8_t priority = 5;
   const char *qprogram = "test-qprogram-data";
   const sqc_rpc_sched_circuit_fmt_t circuit_fmt = SQC_RPC_SCHED_CIRCUIT_FMT_QIR;
@@ -2022,7 +2166,7 @@ void test_ji_get_remark(void) {
 
   // create job
   {
-    rc = dbmgr_ji_create_job(user_id, priority,
+    rc = dbmgr_ji_create_job(user_id, group_id, priority,
                              qprogram, circuit_fmt, shots,
                              qc_type, transpiler,
                              remark, user_token, &ji_ptr);
@@ -2055,6 +2199,7 @@ void test_ji_get_remark(void) {
 void test_ji_get_remark_len(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
+  const char *group_id = "test-group";
   const uint8_t priority = 5;
   const char *qprogram = "test-qprogram-data";
   const sqc_rpc_sched_circuit_fmt_t circuit_fmt = SQC_RPC_SCHED_CIRCUIT_FMT_QIR;
@@ -2079,7 +2224,7 @@ void test_ji_get_remark_len(void) {
 
   // create job
   {
-    rc = dbmgr_ji_create_job(user_id, priority,
+    rc = dbmgr_ji_create_job(user_id, group_id, priority,
                              qprogram, circuit_fmt, shots,
                              qc_type, transpiler,
                              remark, user_token, &ji_ptr);
@@ -2109,6 +2254,7 @@ void test_ji_get_remark_len(void) {
 void test_ji_set_get_result(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
+  const char *group_id = "test-group";
   const uint8_t priority = 5;
   const char *qprogram = "test-qprogram-data";
   const sqc_rpc_sched_circuit_fmt_t circuit_fmt = SQC_RPC_SCHED_CIRCUIT_FMT_QIR;
@@ -2135,7 +2281,7 @@ void test_ji_set_get_result(void) {
 
   // create job
   {
-    rc = dbmgr_ji_create_job(user_id, priority,
+    rc = dbmgr_ji_create_job(user_id, group_id, priority,
                              qprogram, circuit_fmt, shots,
                              qc_type, transpiler,
                              remark, user_token, &ji_ptr);
@@ -2209,6 +2355,7 @@ void test_ji_set_get_result(void) {
 void test_ji_get_user_token(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
+  const char *group_id = "test-group";
   const uint8_t priority = 5;
   const char *qprogram = "test-qprogram-data";
   const sqc_rpc_sched_circuit_fmt_t circuit_fmt = SQC_RPC_SCHED_CIRCUIT_FMT_QIR;
@@ -2232,7 +2379,7 @@ void test_ji_get_user_token(void) {
 
   // create job
   {
-    rc = dbmgr_ji_create_job(user_id, priority,
+    rc = dbmgr_ji_create_job(user_id, group_id, priority,
                              qprogram, circuit_fmt, shots,
                              qc_type, transpiler,
                              remark, user_token, &ji_ptr);
@@ -2265,6 +2412,7 @@ void test_ji_get_user_token(void) {
 void test_ji_get_user_token_len(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
+  const char *group_id = "test-group";
   const uint8_t priority = 5;
   const char *qprogram = "test-qprogram-data";
   const sqc_rpc_sched_circuit_fmt_t circuit_fmt = SQC_RPC_SCHED_CIRCUIT_FMT_QIR;
@@ -2289,7 +2437,7 @@ void test_ji_get_user_token_len(void) {
 
   // create job
   {
-    rc = dbmgr_ji_create_job(user_id, priority,
+    rc = dbmgr_ji_create_job(user_id, group_id, priority,
                              qprogram, circuit_fmt, shots,
                              qc_type, transpiler,
                              remark, user_token, &ji_ptr);
@@ -2316,9 +2464,134 @@ void test_ji_get_user_token_len(void) {
   TEST_ASSERT_NULL(sqc_rpc_sched_db);
 }
 
+void test_ji_set_get_exec_time_estimate_msec(void) {
+  sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
+  const char *user_id = "test-user";
+  const char *group_id = "test-group";
+  const uint8_t priority = 5;
+  const char *qprogram = "test-qprogram-data";
+  const sqc_rpc_sched_circuit_fmt_t circuit_fmt = SQC_RPC_SCHED_CIRCUIT_FMT_QIR;
+  const size_t shots = 30000;
+  const sqc_rpc_sched_qc_type_t qc_type = SQC_RPC_SCHED_QC_TYPE_RQC_REST;
+  const sqc_rpc_sched_transpiler_t transpiler = SQC_RPC_SCHED_TRANSPILER_NORMAL;
+  const char *remark = "test-remark-data";
+  const char *user_token = "test-user_token-data";
+  uint64_t new_exec_time_estimate_msec = 123456789;
+  dbmgr_job_info_t ji_ptr = NULL;
+  uint64_t actual_exec_time_estimate_msec = 0;
+
+  // initialize
+  {
+    rc = s_dbmgr_db_initialize(SQC_RPC_SCHED_UT_DB_FILE);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+    TEST_ASSERT_NOT_NULL(sqc_rpc_sched_db);
+
+    rc = s_dbmgr_job_info_initialize();
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+  }
+
+  // create job
+  {
+    rc = dbmgr_ji_create_job(user_id, group_id, priority,
+                             qprogram, circuit_fmt, shots,
+                             qc_type, transpiler,
+                             remark, user_token, &ji_ptr);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+  }
+
+  // set/get exec_time_estimate_msec
+  {
+    rc = dbmgr_ji_get_exec_time_estimate_msec(ji_ptr, &actual_exec_time_estimate_msec);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+    TEST_ASSERT_EQUAL(0, actual_exec_time_estimate_msec);
+
+    rc = dbmgr_ji_set_exec_time_estimate_msec(ji_ptr, new_exec_time_estimate_msec);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+
+    rc = dbmgr_ji_get_exec_time_estimate_msec(ji_ptr, &actual_exec_time_estimate_msec);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+    TEST_ASSERT_EQUAL(new_exec_time_estimate_msec, actual_exec_time_estimate_msec);
+  }
+
+  // delete job
+  {
+    rc = dbmgr_ji_delete_job(ji_ptr->job_id);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+  }
+
+  // finalize
+  s_dbmgr_job_info_finalize();
+
+  s_dbmgr_db_finalize();
+  TEST_ASSERT_NULL(sqc_rpc_sched_db);
+}
+
+void test_ji_set_get_exec_time_msec(void) {
+  sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
+  const char *user_id = "test-user";
+  const char *group_id = "test-group";
+  const uint8_t priority = 5;
+  const char *qprogram = "test-qprogram-data";
+  const sqc_rpc_sched_circuit_fmt_t circuit_fmt = SQC_RPC_SCHED_CIRCUIT_FMT_QIR;
+  const size_t shots = 30000;
+  const sqc_rpc_sched_qc_type_t qc_type = SQC_RPC_SCHED_QC_TYPE_RQC_REST;
+  const sqc_rpc_sched_transpiler_t transpiler = SQC_RPC_SCHED_TRANSPILER_NORMAL;
+  const char *remark = "test-remark-data";
+  const char *user_token = "test-user_token-data";
+  uint64_t new_exec_time_msec = 123456789;
+  dbmgr_job_info_t ji_ptr = NULL;
+  uint64_t actual_exec_time_msec = 0;
+
+  // initialize
+  {
+    rc = s_dbmgr_db_initialize(SQC_RPC_SCHED_UT_DB_FILE);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+    TEST_ASSERT_NOT_NULL(sqc_rpc_sched_db);
+
+    rc = s_dbmgr_job_info_initialize();
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+  }
+
+  // create job
+  {
+    rc = dbmgr_ji_create_job(user_id, group_id, priority,
+                             qprogram, circuit_fmt, shots,
+                             qc_type, transpiler,
+                             remark, user_token, &ji_ptr);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+  }
+
+  // set/get exec_time_msec
+  {
+    rc = dbmgr_ji_get_exec_time_msec(ji_ptr, &actual_exec_time_msec);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+    TEST_ASSERT_EQUAL(0, actual_exec_time_msec);
+
+    rc = dbmgr_ji_set_exec_time_msec(ji_ptr, new_exec_time_msec);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+
+    rc = dbmgr_ji_get_exec_time_msec(ji_ptr, &actual_exec_time_msec);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+    TEST_ASSERT_EQUAL(new_exec_time_msec, actual_exec_time_msec);
+  }
+
+  // delete job
+  {
+    rc = dbmgr_ji_delete_job(ji_ptr->job_id);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+  }
+
+  // finalize
+  s_dbmgr_job_info_finalize();
+
+  s_dbmgr_db_finalize();
+  TEST_ASSERT_NULL(sqc_rpc_sched_db);
+}
+
 void test_ji_get_created_time(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
+  const char *group_id = "test-group";
   const uint8_t priority = 5;
   const char *qprogram = "test-qprogram-data";
   const sqc_rpc_sched_circuit_fmt_t circuit_fmt = SQC_RPC_SCHED_CIRCUIT_FMT_QIR;
@@ -2342,7 +2615,7 @@ void test_ji_get_created_time(void) {
 
   // create job
   {
-    rc = dbmgr_ji_create_job(user_id, priority,
+    rc = dbmgr_ji_create_job(user_id, group_id, priority,
                              qprogram, circuit_fmt, shots,
                              qc_type, transpiler,
                              remark, user_token, &ji_ptr);
@@ -2373,6 +2646,7 @@ void test_ji_get_created_time(void) {
 void test_ji_get_update_time(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
+  const char *group_id = "test-group";
   const uint8_t priority = 5;
   const char *qprogram = "test-qprogram-data";
   const sqc_rpc_sched_circuit_fmt_t circuit_fmt = SQC_RPC_SCHED_CIRCUIT_FMT_QIR;
@@ -2396,7 +2670,7 @@ void test_ji_get_update_time(void) {
 
   // create job
   {
-    rc = dbmgr_ji_create_job(user_id, priority,
+    rc = dbmgr_ji_create_job(user_id, group_id, priority,
                              qprogram, circuit_fmt, shots,
                              qc_type, transpiler,
                              remark, user_token, &ji_ptr);
@@ -2431,6 +2705,7 @@ void test_ji_arr_sort_by_created_time(void) {
   dbmgr_job_info_t job_info_arr[data_size];
 
   const char *user_id = "test-user";
+  const char *group_id = "test-group";
 
   dbmgr_job_info_t ji_ptr = NULL;
 
@@ -2451,7 +2726,7 @@ void test_ji_arr_sort_by_created_time(void) {
   {
     // create target job
     for (size_t i = 0; i < data_size; i++) {
-      rc = dbmgr_ji_create_job(user_id, 5,
+      rc = dbmgr_ji_create_job(user_id, group_id, 5,
                                "test-qprogram-data", SQC_RPC_SCHED_CIRCUIT_FMT_QIR, 30000 + i,
                                SQC_RPC_SCHED_QC_TYPE_RQC_REST, SQC_RPC_SCHED_TRANSPILER_NORMAL,
                                "test-remark-data", "test-user_token-data", &ji_ptr);
@@ -2581,6 +2856,7 @@ void test_ji_arr_sort_by_created_time(void) {
 void test_job_info_record_create_negative(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
+  const char *group_id = "test-group";
   const uint8_t priority = 5;
   const char *qprogram = "test-qprogram-data";
   const sqc_rpc_sched_circuit_fmt_t circuit_fmt = SQC_RPC_SCHED_CIRCUIT_FMT_QIR;
@@ -2599,21 +2875,21 @@ void test_job_info_record_create_negative(void) {
 
   // invalid job_id
   {
-    rc = s_dbmgr_job_info_record_create(excess_user_id, priority,
+    rc = s_dbmgr_job_info_record_create(excess_user_id, group_id, priority,
                                         qprogram, circuit_fmt, shots,
                                         qc_type, transpiler,
                                         remark, user_token, &ji_ptr);
     TEST_ASSERT_EQUAL(SQC_RESULT_TOO_LONG, rc);
     TEST_ASSERT_NULL(ji_ptr);
 
-    rc = s_dbmgr_job_info_record_create("", priority,
+    rc = s_dbmgr_job_info_record_create("", group_id, priority,
                                         qprogram, circuit_fmt, shots,
                                         qc_type, transpiler,
                                         remark, user_token, &ji_ptr);
     TEST_ASSERT_EQUAL(SQC_RESULT_INVALID_ARGS, rc);
     TEST_ASSERT_NULL(ji_ptr);
 
-    rc = s_dbmgr_job_info_record_create(NULL, priority,
+    rc = s_dbmgr_job_info_record_create(NULL, group_id, priority,
                                         qprogram, circuit_fmt, shots,
                                         qc_type, transpiler,
                                         remark, user_token, &ji_ptr);
@@ -2623,7 +2899,7 @@ void test_job_info_record_create_negative(void) {
 
   // invalid record
   {
-    rc = s_dbmgr_job_info_record_create(user_id, priority,
+    rc = s_dbmgr_job_info_record_create(user_id, group_id, priority,
                                         qprogram, circuit_fmt, shots,
                                         qc_type, transpiler,
                                         remark, user_token, NULL);
@@ -2638,6 +2914,7 @@ void test_job_info_record_destroy_negative(void) {
 void test_job_info_record_add_negative(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
+  const char *group_id = "test-group";
   const uint8_t priority = 5;
   const char *qprogram = "test-qprogram-data";
   const sqc_rpc_sched_circuit_fmt_t circuit_fmt = SQC_RPC_SCHED_CIRCUIT_FMT_QIR;
@@ -2650,7 +2927,7 @@ void test_job_info_record_add_negative(void) {
 
   // create record
   {
-    rc = s_dbmgr_job_info_record_create(user_id, priority,
+    rc = s_dbmgr_job_info_record_create(user_id, group_id, priority,
                                         qprogram, circuit_fmt, shots,
                                         qc_type, transpiler,
                                         remark, user_token, &ji_ptr);
@@ -2695,6 +2972,7 @@ void test_job_info_record_add_negative(void) {
 void test_job_info_record_delete_negative(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
+  const char *group_id = "test-group";
   const uint8_t priority = 5;
   const char *qprogram = "test-qprogram-data";
   const sqc_rpc_sched_circuit_fmt_t circuit_fmt = SQC_RPC_SCHED_CIRCUIT_FMT_QIR;
@@ -2707,7 +2985,7 @@ void test_job_info_record_delete_negative(void) {
 
   // create record
   {
-    rc = s_dbmgr_job_info_record_create(user_id, priority,
+    rc = s_dbmgr_job_info_record_create(user_id, group_id, priority,
                                         qprogram, circuit_fmt, shots,
                                         qc_type, transpiler,
                                         remark, user_token, &ji_ptr);
@@ -2752,6 +3030,7 @@ void test_job_info_record_delete_negative(void) {
 void test_job_info_record_find_negative(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
+  const char *group_id = "test-group";
   const uint8_t priority = 5;
   const char *qprogram = "test-qprogram-data";
   const sqc_rpc_sched_circuit_fmt_t circuit_fmt = SQC_RPC_SCHED_CIRCUIT_FMT_QIR;
@@ -2765,7 +3044,7 @@ void test_job_info_record_find_negative(void) {
 
   // create record
   {
-    rc = s_dbmgr_job_info_record_create(user_id, priority,
+    rc = s_dbmgr_job_info_record_create(user_id, group_id, priority,
                                         qprogram, circuit_fmt, shots,
                                         qc_type, transpiler,
                                         remark, user_token, &ji_ptr);
@@ -2829,6 +3108,7 @@ void test_job_info_record_find_negative(void) {
 void test_ji_create_job_negative(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
+  const char *group_id = "test-group";
   const uint8_t priority = 5;
   const char *qprogram = "test-qprogram-data";
   const sqc_rpc_sched_circuit_fmt_t circuit_fmt = SQC_RPC_SCHED_CIRCUIT_FMT_QIR;
@@ -2841,14 +3121,14 @@ void test_ji_create_job_negative(void) {
 
   // invalid user_id
   {
-    rc = dbmgr_ji_create_job("", priority,
+    rc = dbmgr_ji_create_job("", group_id, priority,
                              qprogram, circuit_fmt, shots,
                              qc_type, transpiler,
                              remark, user_token, &ji_ptr);
     TEST_ASSERT_EQUAL(SQC_RESULT_INVALID_ARGS, rc);
     TEST_ASSERT_NULL(ji_ptr);
 
-    rc = dbmgr_ji_create_job(NULL, priority,
+    rc = dbmgr_ji_create_job(NULL, group_id, priority,
                              qprogram, circuit_fmt, shots,
                              qc_type, transpiler,
                              remark, user_token, &ji_ptr);
@@ -2858,7 +3138,7 @@ void test_ji_create_job_negative(void) {
 
   // invalid priority
   {
-    rc = dbmgr_ji_create_job(user_id, 100,
+    rc = dbmgr_ji_create_job(user_id, group_id, 100,
                              qprogram, circuit_fmt, shots,
                              qc_type, transpiler,
                              remark, user_token, &ji_ptr);
@@ -2868,14 +3148,14 @@ void test_ji_create_job_negative(void) {
 
   // invalid qprogram
   {
-    rc = dbmgr_ji_create_job(user_id, priority,
+    rc = dbmgr_ji_create_job(user_id, group_id, priority,
                              "", circuit_fmt, shots,
                              qc_type, transpiler,
                              remark, user_token, &ji_ptr);
     TEST_ASSERT_EQUAL(SQC_RESULT_INVALID_ARGS, rc);
     TEST_ASSERT_NULL(ji_ptr);
 
-    rc = dbmgr_ji_create_job(user_id, priority,
+    rc = dbmgr_ji_create_job(user_id, group_id, priority,
                              NULL, circuit_fmt, shots,
                              qc_type, transpiler,
                              remark, user_token, &ji_ptr);
@@ -2885,14 +3165,14 @@ void test_ji_create_job_negative(void) {
 
   // invalid remark
   {
-    rc = dbmgr_ji_create_job(user_id, priority,
+    rc = dbmgr_ji_create_job(user_id, group_id, priority,
                              qprogram, circuit_fmt, shots,
                              qc_type, transpiler,
                              "", user_token, &ji_ptr);
     TEST_ASSERT_EQUAL(SQC_RESULT_INVALID_ARGS, rc);
     TEST_ASSERT_NULL(ji_ptr);
 
-    rc = dbmgr_ji_create_job(user_id, priority,
+    rc = dbmgr_ji_create_job(user_id, group_id, priority,
                              qprogram, circuit_fmt, shots,
                              qc_type, transpiler,
                              NULL, user_token, &ji_ptr);
@@ -2902,7 +3182,7 @@ void test_ji_create_job_negative(void) {
 
   // invalid record
   {
-    rc = dbmgr_ji_create_job(user_id, priority,
+    rc = dbmgr_ji_create_job(user_id, group_id, priority,
                              qprogram, circuit_fmt, shots,
                              qc_type, transpiler,
                              remark, user_token, NULL);
@@ -2986,6 +3266,7 @@ void test_ji_job_find_negative(void) {
 void test_ji_get_job_id_negative(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
+  const char *group_id = "test-group";
   const uint8_t priority = 5;
   const char *qprogram = "test-qprogram-data";
   const sqc_rpc_sched_circuit_fmt_t circuit_fmt = SQC_RPC_SCHED_CIRCUIT_FMT_QIR;
@@ -2999,7 +3280,7 @@ void test_ji_get_job_id_negative(void) {
 
   // create record
   {
-    rc = s_dbmgr_job_info_record_create(user_id, priority,
+    rc = s_dbmgr_job_info_record_create(user_id, group_id, priority,
                                         qprogram, circuit_fmt, shots,
                                         qc_type, transpiler,
                                         remark, user_token, &ji_ptr);
@@ -3028,6 +3309,7 @@ void test_ji_get_job_id_negative(void) {
 void test_ji_get_job_id_len_negative(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
+  const char *group_id = "test-group";
   const uint8_t priority = 5;
   const char *qprogram = "test-qprogram-data";
   const sqc_rpc_sched_circuit_fmt_t circuit_fmt = SQC_RPC_SCHED_CIRCUIT_FMT_QIR;
@@ -3041,7 +3323,7 @@ void test_ji_get_job_id_len_negative(void) {
 
   // create record
   {
-    rc = s_dbmgr_job_info_record_create(user_id, priority,
+    rc = s_dbmgr_job_info_record_create(user_id, group_id, priority,
                                         qprogram, circuit_fmt, shots,
                                         qc_type, transpiler,
                                         remark, user_token, &ji_ptr);
@@ -3070,6 +3352,7 @@ void test_ji_get_job_id_len_negative(void) {
 void test_ji_get_user_id_negative(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
+  const char *group_id = "test-group";
   const uint8_t priority = 5;
   const char *qprogram = "test-qprogram-data";
   const sqc_rpc_sched_circuit_fmt_t circuit_fmt = SQC_RPC_SCHED_CIRCUIT_FMT_QIR;
@@ -3083,7 +3366,7 @@ void test_ji_get_user_id_negative(void) {
 
   // create record
   {
-    rc = s_dbmgr_job_info_record_create(user_id, priority,
+    rc = s_dbmgr_job_info_record_create(user_id, group_id, priority,
                                         qprogram, circuit_fmt, shots,
                                         qc_type, transpiler,
                                         remark, user_token, &ji_ptr);
@@ -3112,6 +3395,7 @@ void test_ji_get_user_id_negative(void) {
 void test_ji_get_user_id_len_negative(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
+  const char *group_id = "test-group";
   const uint8_t priority = 5;
   const char *qprogram = "test-qprogram-data";
   const sqc_rpc_sched_circuit_fmt_t circuit_fmt = SQC_RPC_SCHED_CIRCUIT_FMT_QIR;
@@ -3125,7 +3409,7 @@ void test_ji_get_user_id_len_negative(void) {
 
   // create record
   {
-    rc = s_dbmgr_job_info_record_create(user_id, priority,
+    rc = s_dbmgr_job_info_record_create(user_id, group_id, priority,
                                         qprogram, circuit_fmt, shots,
                                         qc_type, transpiler,
                                         remark, user_token, &ji_ptr);
@@ -3154,6 +3438,7 @@ void test_ji_get_user_id_len_negative(void) {
 void test_ji_get_priority_negative(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
+  const char *group_id = "test-group";
   const uint8_t priority = 5;
   const char *qprogram = "test-qprogram-data";
   const sqc_rpc_sched_circuit_fmt_t circuit_fmt = SQC_RPC_SCHED_CIRCUIT_FMT_QIR;
@@ -3167,7 +3452,7 @@ void test_ji_get_priority_negative(void) {
 
   // create record
   {
-    rc = s_dbmgr_job_info_record_create(user_id, priority,
+    rc = s_dbmgr_job_info_record_create(user_id, group_id, priority,
                                         qprogram, circuit_fmt, shots,
                                         qc_type, transpiler,
                                         remark, user_token, &ji_ptr);
@@ -3196,6 +3481,7 @@ void test_ji_get_priority_negative(void) {
 void test_ji_set_qc_job_id_negative(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
+  const char *group_id = "test-group";
   const uint8_t priority = 5;
   const char *qc_job_id = "test-qc-job";
   const char *qprogram = "test-qprogram-data";
@@ -3209,7 +3495,7 @@ void test_ji_set_qc_job_id_negative(void) {
 
   // create record
   {
-    rc = s_dbmgr_job_info_record_create(user_id, priority,
+    rc = s_dbmgr_job_info_record_create(user_id, group_id, priority,
                                         qprogram, circuit_fmt, shots,
                                         qc_type, transpiler,
                                         remark, user_token, &ji_ptr);
@@ -3243,6 +3529,7 @@ void test_ji_set_qc_job_id_negative(void) {
 void test_ji_get_qc_job_id_negative(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
+  const char *group_id = "test-group";
   const uint8_t priority = 5;
   const char *qprogram = "test-qprogram-data";
   const sqc_rpc_sched_circuit_fmt_t circuit_fmt = SQC_RPC_SCHED_CIRCUIT_FMT_QIR;
@@ -3256,7 +3543,7 @@ void test_ji_get_qc_job_id_negative(void) {
 
   // create record
   {
-    rc = s_dbmgr_job_info_record_create(user_id, priority,
+    rc = s_dbmgr_job_info_record_create(user_id, group_id, priority,
                                         qprogram, circuit_fmt, shots,
                                         qc_type, transpiler,
                                         remark, user_token, &ji_ptr);
@@ -3285,6 +3572,7 @@ void test_ji_get_qc_job_id_negative(void) {
 void test_ji_get_qc_job_id_len_negative(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
+  const char *group_id = "test-group";
   const uint8_t priority = 5;
   const char *qprogram = "test-qprogram-data";
   const sqc_rpc_sched_circuit_fmt_t circuit_fmt = SQC_RPC_SCHED_CIRCUIT_FMT_QIR;
@@ -3298,7 +3586,7 @@ void test_ji_get_qc_job_id_len_negative(void) {
 
   // create record
   {
-    rc = s_dbmgr_job_info_record_create(user_id, priority,
+    rc = s_dbmgr_job_info_record_create(user_id, group_id, priority,
                                         qprogram, circuit_fmt, shots,
                                         qc_type, transpiler,
                                         remark, user_token, &ji_ptr);
@@ -3327,6 +3615,7 @@ void test_ji_get_qc_job_id_len_negative(void) {
 void test_ji_get_qprogram_negative(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
+  const char *group_id = "test-group";
   const uint8_t priority = 5;
   const char *qprogram = "test-qprogram-data";
   const sqc_rpc_sched_circuit_fmt_t circuit_fmt = SQC_RPC_SCHED_CIRCUIT_FMT_QIR;
@@ -3340,7 +3629,7 @@ void test_ji_get_qprogram_negative(void) {
 
   // create record
   {
-    rc = s_dbmgr_job_info_record_create(user_id, priority,
+    rc = s_dbmgr_job_info_record_create(user_id, group_id, priority,
                                         qprogram, circuit_fmt, shots,
                                         qc_type, transpiler,
                                         remark, user_token, &ji_ptr);
@@ -3369,6 +3658,7 @@ void test_ji_get_qprogram_negative(void) {
 void test_ji_get_qprogram_len_negative(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
+  const char *group_id = "test-group";
   const uint8_t priority = 5;
   const char *qprogram = "test-qprogram-data";
   const sqc_rpc_sched_circuit_fmt_t circuit_fmt = SQC_RPC_SCHED_CIRCUIT_FMT_QIR;
@@ -3382,7 +3672,7 @@ void test_ji_get_qprogram_len_negative(void) {
 
   // create record
   {
-    rc = s_dbmgr_job_info_record_create(user_id, priority,
+    rc = s_dbmgr_job_info_record_create(user_id, group_id, priority,
                                         qprogram, circuit_fmt, shots,
                                         qc_type, transpiler,
                                         remark, user_token, &ji_ptr);
@@ -3411,6 +3701,7 @@ void test_ji_get_qprogram_len_negative(void) {
 void test_ji_get_shots_negative(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
+  const char *group_id = "test-group";
   const uint8_t priority = 5;
   const char *qprogram = "test-qprogram-data";
   const sqc_rpc_sched_circuit_fmt_t circuit_fmt = SQC_RPC_SCHED_CIRCUIT_FMT_QIR;
@@ -3424,7 +3715,7 @@ void test_ji_get_shots_negative(void) {
 
   // create record
   {
-    rc = s_dbmgr_job_info_record_create(user_id, priority,
+    rc = s_dbmgr_job_info_record_create(user_id, group_id, priority,
                                         qprogram, circuit_fmt, shots,
                                         qc_type, transpiler,
                                         remark, user_token, &ji_ptr);
@@ -3453,6 +3744,7 @@ void test_ji_get_shots_negative(void) {
 void test_ji_get_qc_type_negative(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
+  const char *group_id = "test-group";
   const uint8_t priority = 5;
   const char *qprogram = "test-qprogram-data";
   const sqc_rpc_sched_circuit_fmt_t circuit_fmt = SQC_RPC_SCHED_CIRCUIT_FMT_QIR;
@@ -3466,7 +3758,7 @@ void test_ji_get_qc_type_negative(void) {
 
   // create record
   {
-    rc = s_dbmgr_job_info_record_create(user_id, priority,
+    rc = s_dbmgr_job_info_record_create(user_id, group_id, priority,
                                         qprogram, circuit_fmt, shots,
                                         qc_type, transpiler,
                                         remark, user_token, &ji_ptr);
@@ -3495,6 +3787,7 @@ void test_ji_get_qc_type_negative(void) {
 void test_ji_get_transpiler_negative(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
+  const char *group_id = "test-group";
   const uint8_t priority = 5;
   const char *qprogram = "test-qprogram-data";
   const sqc_rpc_sched_circuit_fmt_t circuit_fmt = SQC_RPC_SCHED_CIRCUIT_FMT_QIR;
@@ -3508,7 +3801,7 @@ void test_ji_get_transpiler_negative(void) {
 
   // create record
   {
-    rc = s_dbmgr_job_info_record_create(user_id, priority,
+    rc = s_dbmgr_job_info_record_create(user_id, group_id, priority,
                                         qprogram, circuit_fmt, shots,
                                         qc_type, transpiler,
                                         remark, user_token, &ji_ptr);
@@ -3537,6 +3830,7 @@ void test_ji_get_transpiler_negative(void) {
 void test_ji_get_remark_negative(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
+  const char *group_id = "test-group";
   const uint8_t priority = 5;
   const char *qprogram = "test-qprogram-data";
   const sqc_rpc_sched_circuit_fmt_t circuit_fmt = SQC_RPC_SCHED_CIRCUIT_FMT_QIR;
@@ -3550,7 +3844,7 @@ void test_ji_get_remark_negative(void) {
 
   // create record
   {
-    rc = s_dbmgr_job_info_record_create(user_id, priority,
+    rc = s_dbmgr_job_info_record_create(user_id, group_id, priority,
                                         qprogram, circuit_fmt, shots,
                                         qc_type, transpiler,
                                         remark, user_token, &ji_ptr);
@@ -3579,6 +3873,7 @@ void test_ji_get_remark_negative(void) {
 void test_ji_get_remark_len_negative(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
+  const char *group_id = "test-group";
   const uint8_t priority = 5;
   const char *qprogram = "test-qprogram-data";
   const sqc_rpc_sched_circuit_fmt_t circuit_fmt = SQC_RPC_SCHED_CIRCUIT_FMT_QIR;
@@ -3592,7 +3887,7 @@ void test_ji_get_remark_len_negative(void) {
 
   // create record
   {
-    rc = s_dbmgr_job_info_record_create(user_id, priority,
+    rc = s_dbmgr_job_info_record_create(user_id, group_id, priority,
                                         qprogram, circuit_fmt, shots,
                                         qc_type, transpiler,
                                         remark, user_token, &ji_ptr);
@@ -3621,6 +3916,7 @@ void test_ji_get_remark_len_negative(void) {
 void test_ji_set_result_negative(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
+  const char *group_id = "test-group";
   const uint8_t priority = 5;
   const char *qprogram = "test-qprogram-data";
   const sqc_rpc_sched_circuit_fmt_t circuit_fmt = SQC_RPC_SCHED_CIRCUIT_FMT_QIR;
@@ -3635,7 +3931,7 @@ void test_ji_set_result_negative(void) {
 
   // create record
   {
-    rc = s_dbmgr_job_info_record_create(user_id, priority,
+    rc = s_dbmgr_job_info_record_create(user_id, group_id, priority,
                                         qprogram, circuit_fmt, shots,
                                         qc_type, transpiler,
                                         remark, user_token, &ji_ptr);
@@ -3669,6 +3965,7 @@ void test_ji_set_result_negative(void) {
 void test_ji_get_result_negative(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
+  const char *group_id = "test-group";
   const uint8_t priority = 5;
   const char *qprogram = "test-qprogram-data";
   const sqc_rpc_sched_circuit_fmt_t circuit_fmt = SQC_RPC_SCHED_CIRCUIT_FMT_QIR;
@@ -3682,7 +3979,7 @@ void test_ji_get_result_negative(void) {
 
   // create record
   {
-    rc = s_dbmgr_job_info_record_create(user_id, priority,
+    rc = s_dbmgr_job_info_record_create(user_id, group_id, priority,
                                         qprogram, circuit_fmt, shots,
                                         qc_type, transpiler,
                                         remark, user_token, &ji_ptr);
@@ -3711,6 +4008,7 @@ void test_ji_get_result_negative(void) {
 void test_ji_get_result_len_negative(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
+  const char *group_id = "test-group";
   const uint8_t priority = 5;
   const char *qprogram = "test-qprogram-data";
   const sqc_rpc_sched_circuit_fmt_t circuit_fmt = SQC_RPC_SCHED_CIRCUIT_FMT_QIR;
@@ -3724,7 +4022,7 @@ void test_ji_get_result_len_negative(void) {
 
   // create record
   {
-    rc = s_dbmgr_job_info_record_create(user_id, priority,
+    rc = s_dbmgr_job_info_record_create(user_id, group_id, priority,
                                         qprogram, circuit_fmt, shots,
                                         qc_type, transpiler,
                                         remark, user_token, &ji_ptr);
@@ -3753,6 +4051,7 @@ void test_ji_get_result_len_negative(void) {
 void test_ji_get_user_token_negative(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
+  const char *group_id = "test-group";
   const uint8_t priority = 5;
   const char *qprogram = "test-qprogram-data";
   const sqc_rpc_sched_circuit_fmt_t circuit_fmt = SQC_RPC_SCHED_CIRCUIT_FMT_QIR;
@@ -3766,7 +4065,7 @@ void test_ji_get_user_token_negative(void) {
 
   // create record
   {
-    rc = s_dbmgr_job_info_record_create(user_id, priority,
+    rc = s_dbmgr_job_info_record_create(user_id, group_id, priority,
                                         qprogram, circuit_fmt, shots,
                                         qc_type, transpiler,
                                         remark, user_token, &ji_ptr);
@@ -3795,6 +4094,7 @@ void test_ji_get_user_token_negative(void) {
 void test_ji_get_user_token_len_negative(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
+  const char *group_id = "test-group";
   const uint8_t priority = 5;
   const char *qprogram = "test-qprogram-data";
   const sqc_rpc_sched_circuit_fmt_t circuit_fmt = SQC_RPC_SCHED_CIRCUIT_FMT_QIR;
@@ -3808,7 +4108,7 @@ void test_ji_get_user_token_len_negative(void) {
 
   // create record
   {
-    rc = s_dbmgr_job_info_record_create(user_id, priority,
+    rc = s_dbmgr_job_info_record_create(user_id, group_id, priority,
                                         qprogram, circuit_fmt, shots,
                                         qc_type, transpiler,
                                         remark, user_token, &ji_ptr);
@@ -3837,6 +4137,7 @@ void test_ji_get_user_token_len_negative(void) {
 void test_ji_get_create_time_negative(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
+  const char *group_id = "test-group";
   const uint8_t priority = 5;
   const char *qprogram = "test-qprogram-data";
   const sqc_rpc_sched_circuit_fmt_t circuit_fmt = SQC_RPC_SCHED_CIRCUIT_FMT_QIR;
@@ -3850,7 +4151,7 @@ void test_ji_get_create_time_negative(void) {
 
   // create record
   {
-    rc = s_dbmgr_job_info_record_create(user_id, priority,
+    rc = s_dbmgr_job_info_record_create(user_id, group_id, priority,
                                         qprogram, circuit_fmt, shots,
                                         qc_type, transpiler,
                                         remark, user_token, &ji_ptr);
@@ -3879,6 +4180,7 @@ void test_ji_get_create_time_negative(void) {
 void test_ji_get_update_time_negative(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
+  const char *group_id = "test-group";
   const uint8_t priority = 5;
   const char *qprogram = "test-qprogram-data";
   const sqc_rpc_sched_circuit_fmt_t circuit_fmt = SQC_RPC_SCHED_CIRCUIT_FMT_QIR;
@@ -3892,7 +4194,7 @@ void test_ji_get_update_time_negative(void) {
 
   // create record
   {
-    rc = s_dbmgr_job_info_record_create(user_id, priority,
+    rc = s_dbmgr_job_info_record_create(user_id, group_id, priority,
                                         qprogram, circuit_fmt, shots,
                                         qc_type, transpiler,
                                         remark, user_token, &ji_ptr);

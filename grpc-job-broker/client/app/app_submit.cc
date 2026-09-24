@@ -24,11 +24,13 @@
 static bool
 s_submit_job(job_broker_client& client, std::uint32_t priority, const std::string& qprogram,
              circuit_fmt_t circuit_fmt, std::size_t shots, qc_type_t qc_type, transpiler_t transpiler,
-             const std::string& remark, std::optional<std::string> user_token) {
+             const std::string& remark, std::optional<std::string> user_token,
+             std::optional<std::string> group_id) {
   // Sends a 'submit_job' request.
   submit_job_reply reply;
-  grpc::Status grpc_status = client.submit_job(qprogram, circuit_fmt, shots, qc_type, transpiler,
-                                               remark, user_token, priority, reply);
+  grpc::Status grpc_status = client.submit_job(priority, qprogram, circuit_fmt,
+                                               shots, qc_type, transpiler, remark,
+                                               user_token, group_id, reply);
   std::int64_t result_code = reply.code();
 
   // Parses the reply.
@@ -72,11 +74,16 @@ s_print_help_submit(const char* argv0) {
   std::cout << "  --remark=TEXT        remark text (default: empty text)" << std::endl;
   std::cout << std::endl;
   std::cout << "Arguments:" << std::endl;
-  std::cout << "  QC-TYPE              QC type of the job" << std::endl;
-  std::cout << "                       (rqc-rest, ibm-rest or slurm-rest)" << std::endl;
+  std::cout << "  QC-TYPE              QC type of the job; one of:" << std::endl;
+  std::cout << "                         rqc-rest, ibm-rest, slurm-rest," << std::endl;
+  std::cout << "                         qtm-grpc, qtm-sim-grpc, ibm-dacc," << std::endl;
+  std::cout << "                         dummy, a-oqtopusrest-system-token," << std::endl;
+  std::cout << "                         a-oqtopusrest-user-token," << std::endl;
+  std::cout << "                         a-oqtopusrest-both-token" << std::endl;
   std::cout << "  PRIORITY             priority of the job" << std::endl;
   std::cout << "  QPROGRAM             path to a program file" << std::endl;
-  std::cout << "  FORMAT               format type of QPROGRAM (qasm, qir or qpy)" << std::endl;
+  std::cout << "  FORMAT               format type of QPROGRAM; one of:" << std::endl;
+  std::cout << "                         qasm, qir, qpy, json" << std::endl;
   std::cout << "  SHOTS                the number of shots" << std::endl;
 }
 
@@ -91,6 +98,8 @@ do_subcmd_submit(int argc, char* argv[], int optind) {
   std::string remark;
   const char* env_user_token = getenv("SQC_GRPC_USER_TOKEN");
   std::optional<std::string> user_token;
+  const char* env_group_id = getenv("SQC_GRPC_GROUP_ID");
+  std::optional<std::string> group_id;
 
   for (; optind < argc; optind++) {
     std::string arg = argv[optind];
@@ -165,6 +174,7 @@ do_subcmd_submit(int argc, char* argv[], int optind) {
   }
 
   user_token = env_user_token ? std::optional<std::string>{env_user_token} : std::nullopt;
+  group_id = env_group_id ? std::optional<std::string>{env_group_id} : std::nullopt;
 
   std::cout << "Request: qc_type=" << qc_type
             << ", priority=" << priority
@@ -174,6 +184,7 @@ do_subcmd_submit(int argc, char* argv[], int optind) {
             << ", transpiler=" << transpiler
             << ", remark=" << remark
             << ", user_token=" << user_token.value_or("null")
+            << ", group_id=" << group_id.value_or("null")
             << std::endl;
 
   job_broker_client* client = create_job_broker_client(server, conf_dir);
@@ -181,7 +192,7 @@ do_subcmd_submit(int argc, char* argv[], int optind) {
     return 1;
   }
   bool submit_result = s_submit_job(*client, priority, qprogram, circuit_fmt, shots, qc_type,
-                                    transpiler, remark, user_token);
+                                    transpiler, remark, user_token, group_id);
   delete client;
   return submit_result ? 0 : 1;
 }

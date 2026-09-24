@@ -7,7 +7,7 @@
 __BEGIN_DECLS
 
 sqc_result_t
-dbmgr_ji_create_job(const char *user_id, const uint8_t priority,
+dbmgr_ji_create_job(const char *user_id, const char *group_id, const uint8_t priority,
                     const char *qprogram, sqc_rpc_sched_circuit_fmt_t circuit_fmt, size_t shots,
                     sqc_rpc_sched_qc_type_t qc_type, sqc_rpc_sched_transpiler_t transpiler,
                     const char *remark, const char *user_token, dbmgr_job_info_t *ji_ptr);
@@ -52,6 +52,12 @@ dbmgr_ji_get_user_id(const dbmgr_job_info_t ji_ptr, char **user_id);
 
 sqc_result_t
 dbmgr_ji_get_user_id_len(const dbmgr_job_info_t ji_ptr, size_t *user_id_len);
+
+sqc_result_t
+dbmgr_ji_get_group_id(const dbmgr_job_info_t ji_ptr, char **group_id);
+
+sqc_result_t
+dbmgr_ji_get_group_id_len(const dbmgr_job_info_t ji_ptr, size_t *group_id_len);
 
 sqc_result_t
 dbmgr_ji_get_priority(const dbmgr_job_info_t ji_ptr, uint8_t *priority);
@@ -124,6 +130,21 @@ dbmgr_ji_get_user_token(const dbmgr_job_info_t ji_ptr, char **user_token);
 
 sqc_result_t
 dbmgr_ji_get_user_token_len(const dbmgr_job_info_t ji_ptr, size_t *user_token_len);
+
+sqc_result_t
+dbmgr_ji_get_exec_time_estimate_msec(const dbmgr_job_info_t ji_ptr,
+                                     uint64_t *exec_time_estimate_msec);
+
+sqc_result_t
+dbmgr_ji_set_exec_time_estimate_msec(dbmgr_job_info_t ji_ptr,
+                                     uint64_t exec_time_estimate_msec);
+
+sqc_result_t
+dbmgr_ji_get_exec_time_msec(const dbmgr_job_info_t ji_ptr,
+                            uint64_t *exec_time_msec);
+
+sqc_result_t
+dbmgr_ji_set_exec_time_msec(dbmgr_job_info_t ji_ptr, uint64_t exec_time_msec);
 
 sqc_result_t
 dbmgr_ji_get_created_time(const dbmgr_job_info_t ji_ptr, sqc_chrono_t *created_time);

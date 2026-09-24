@@ -19,7 +19,8 @@
 //
 static int64_t
 s_handle_submit_job(const char* token, uint32_t priority, const char* qprogram, int circuit_fmt,
-                    size_t shots, int qc_type, int transpiler, const char* remark, const char* user_token,
+                    size_t shots, int qc_type, int transpiler, const char* remark,
+                    const char* user_token, const char* group_id,
                     char** job_id, char** reply_msg) {
   (void) token;
   (void) priority;
@@ -30,6 +31,7 @@ s_handle_submit_job(const char* token, uint32_t priority, const char* qprogram, 
   (void) transpiler;
   (void) remark;
   (void) user_token;
+  (void) group_id;
 
   *job_id = strdup(TEST_JOB_ID);
   *reply_msg = NULL;
@@ -163,6 +165,35 @@ s_handle_adm_set_user_status(const char* token, const char* user_id, bool enable
 }
 
 //
+// Dummy implementation of adm_set_group_exec_time_limit.
+//
+static int64_t
+s_handle_adm_set_group_exec_time_limit(const char* token, const char* group_id,
+                                       uint64_t exec_time_limit, char** reply_msg) {
+  (void) token;
+  (void) group_id;
+  (void) exec_time_limit;
+
+  *reply_msg = NULL;
+  return RESULT_OK;
+}
+
+//
+// Dummy implementation of adm_set_user_group_status.
+//
+static int64_t
+s_handle_adm_set_user_group_status(const char* token, const char* user_id, const char* group_id,
+                                   bool enabled, char** reply_msg) {
+  (void) token;
+  (void) user_id;
+  (void) group_id;
+  (void) enabled;
+
+  *reply_msg = NULL;
+  return RESULT_OK;
+}
+
+//
 // Prints help message to standard out.
 //
 static void
@@ -216,6 +247,8 @@ int main(int argc, char* argv[]) {
   job_broker_handlers.adm_del_jobs = s_handle_adm_del_jobs;
   job_broker_handlers.adm_add_user = s_handle_adm_add_user;
   job_broker_handlers.adm_set_user_status = s_handle_adm_set_user_status;
+  job_broker_handlers.adm_set_group_exec_time_limit = s_handle_adm_set_group_exec_time_limit;
+  job_broker_handlers.adm_set_user_group_status = s_handle_adm_set_user_group_status;
 
   job_broker_set_log_emitter(job_broker_log_emit_to_stderr);
   if (sqc_job_broker_initialize((void*) argv[optind], conf_dir, &job_broker_handlers,

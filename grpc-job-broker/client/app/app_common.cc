@@ -123,6 +123,40 @@ parse_option_with_value(const std::string& arg, const std::string& option_name,
   return true;
 }
 
+bool
+parse_uint32(const std::string& arg, std::uint32_t *value) {
+  try {
+    unsigned long parsed_val = std::stoul(arg, nullptr, 10);
+    if (parsed_val > static_cast<unsigned long>(std::numeric_limits<std::uint32_t>::max())) {
+        return false;
+    }
+
+    *value = static_cast<std::uint32_t>(parsed_val);
+    return true;
+  } catch (const std::invalid_argument& e) {
+      return false;
+  } catch (const std::out_of_range& e) {
+      return false;
+  }
+}
+
+bool
+parse_uint64(const std::string& arg, std::uint64_t *value) {
+  try {
+    unsigned long long parsed_val = std::stoull(arg, nullptr, 10);
+    if (parsed_val > static_cast<unsigned long long>(std::numeric_limits<std::uint64_t>::max())) {
+      return false;
+    }
+
+    *value = static_cast<std::uint64_t>(parsed_val);
+    return true;
+  } catch (const std::invalid_argument& e) {
+    return false;
+  } catch (const std::out_of_range& e) {
+    return false;
+  }
+}
+
 //
 // Creates a gRPC client.
 //
@@ -216,7 +250,7 @@ get_default_server() {
 //
 const std::string
 get_default_conf_dir() {
-  static const std::string default_conf_dir = "~/.sqc_rpc_sched";
+  static const std::string default_conf_dir = "~/.sqc-scheduler";
   return default_conf_dir;
 }
 

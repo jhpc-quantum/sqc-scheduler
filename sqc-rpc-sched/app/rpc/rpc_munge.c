@@ -97,7 +97,7 @@ s_munge_decode(const char *cred, uid_t *uid, gid_t *gid, char **cred_addr_port) 
         *uid = tmp_uid;
         *gid = tmp_gid;
         *cred_addr_port = buf;
-        sqc_msg_debug(5, "A MUNGE credential decoded");
+        sqc_msg_debug(5, "A MUNGE credential decoded\n");
       } else {
         ret = SQC_RESULT_INVALID_OBJECT;
         sqc_msg_error("Failed to decode MUNGE credential, due to unexpected "

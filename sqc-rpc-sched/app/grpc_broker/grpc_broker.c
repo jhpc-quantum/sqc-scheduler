@@ -72,7 +72,7 @@ s_grpc_broker_thd_finalize(const sqc_thread_t *tptr, bool is_canceled,
     }
   }
 
-  sqc_msg_debug(5, "called with %s self and the thread is %s.",
+  sqc_msg_debug(5, "called with %s self and the thread is %s.\n",
                 ((mt != NULL) ? "valid" : "invalid (NULL)"),
                 ((is_canceled == true) ? "canceled" : "exited"));
 }

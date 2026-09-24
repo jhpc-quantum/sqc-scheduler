@@ -90,7 +90,7 @@ void test_rpc_munge_server_validate_cred(void) {
   session_client->jwt_ctx_ = NULL;
 
   if (fork() == 0) {
-    ret = rpc_session_client_create_from_conf_dir(&session_client, "127.0.0.1:33375", true, RPC_AUTH_METHOD_MUNGE, ".sqc_rpc_sched");
+    ret = rpc_session_client_create_from_conf_dir(&session_client, "127.0.0.1:33375", true, RPC_AUTH_METHOD_MUNGE, ".sqc-scheduler");
     TEST_ASSERT_EQUAL(SQC_RESULT_OK, ret);
 
     rpc_session_client_destroy(&session_client);

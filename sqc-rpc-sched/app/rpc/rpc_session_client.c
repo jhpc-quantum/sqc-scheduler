@@ -479,7 +479,8 @@ s_destroy(rpc_session_client_t *rpc_session) {
 static inline sqc_result_t
 s_submit_job(rpc_session_client_t *rpc_session, uint8_t priority, const char *qprogram,
              sqc_rpc_sched_circuit_fmt_t circuit_fmt, size_t shots, sqc_rpc_sched_qc_type_t qc_type,
-             sqc_rpc_sched_transpiler_t transpiler, const char *remark, const char *user_token,
+             sqc_rpc_sched_transpiler_t transpiler, const char *remark,
+             const char *user_token, const char *group_id,
              sqc_result_t *code, char **msg, char **job_id) {
   sqc_result_t ret = SQC_RESULT_ANY_FAILURES;
   sqc_result_t pack_result = SQC_RESULT_ANY_FAILURES;
@@ -495,7 +496,7 @@ s_submit_job(rpc_session_client_t *rpc_session, uint8_t priority, const char *qp
   if (likely(rpc_session != NULL && qprogram != NULL && remark != NULL &&
              code != NULL && msg != NULL && job_id != NULL)) {
     pack_result = rpc_pack_submit_job_request(priority, qprogram, circuit_fmt, shots, qc_type, transpiler,
-                                              remark, user_token, &body, &len);
+                                              remark, user_token, group_id, &body, &len);
 
     if (likely(pack_result == SQC_RESULT_OK)) {
       rpc_result = s_request(rpc_session, id, body, len, &reply_id, &reply_body, &reply_len, msg);
@@ -658,7 +659,7 @@ s_cancel_job(rpc_session_client_t *rpc_session, const char *job_id, sqc_result_t
 
           if (likely(unpack_result == SQC_RESULT_OK)) {
             ret = *code;
-            sqc_msg_debug(5, "RPC %s: Received a reply: code=%d (%s), msg='%s'",
+            sqc_msg_debug(5, "RPC %s: Received a reply: code=%d (%s), msg='%s'\n",
                           rpc_message_name_string(id), (int) *code, sqc_error_get_string(*code), *msg);
           } else {
             ret = unpack_result;
@@ -732,7 +733,7 @@ s_delete_job(rpc_session_client_t *rpc_session, const char *job_id, sqc_result_t
 
           if (likely(unpack_result == SQC_RESULT_OK)) {
             ret = *code;
-            sqc_msg_debug(5, "RPC %s: Received a reply: code=%d (%s), msg='%s'",
+            sqc_msg_debug(5, "RPC %s: Received a reply: code=%d (%s), msg='%s'\n",
                           rpc_message_name_string(id), (int) *code, sqc_error_get_string(*code), *msg);
           } else {
             ret = unpack_result;
@@ -801,7 +802,7 @@ s_job_list(rpc_session_client_t *rpc_session, sqc_result_t *code, char **msg,
 
         if (likely(unpack_result == SQC_RESULT_OK)) {
           ret = *code;
-          sqc_msg_debug(5, "RPC %s: Received a reply: code=%d (%s), msg='%s'",
+          sqc_msg_debug(5, "RPC %s: Received a reply: code=%d (%s), msg='%s'\n",
                         rpc_message_name_string(id), (int) *code, sqc_error_get_string(*code), *msg);
         } else {
           ret = unpack_result;
@@ -886,7 +887,7 @@ s_adm_del_jobs(rpc_session_client_t *rpc_session, const char *user_id, sqc_chron
       break;
     }
     ret = *code;
-    sqc_msg_debug(5, "RPC %s: Received a reply: code=%d (%s), msg='%s'",
+    sqc_msg_debug(5, "RPC %s: Received a reply: code=%d (%s), msg='%s'\n",
                   rpc_message_name_string(id), (int) *code, sqc_error_get_string(*code), *msg);
   } while (0);
 
@@ -946,7 +947,7 @@ s_adm_add_user(rpc_session_client_t *rpc_session, const char *user_id, sqc_resul
       break;
     }
     ret = *code;
-    sqc_msg_debug(5, "RPC %s: Received a reply: code=%d (%s), msg='%s'",
+    sqc_msg_debug(5, "RPC %s: Received a reply: code=%d (%s), msg='%s'\n",
                   rpc_message_name_string(id), (int) *code, sqc_error_get_string(*code), *msg);
   } while (0);
 
@@ -1007,7 +1008,139 @@ s_adm_set_user_status(rpc_session_client_t *rpc_session, const char *user_id, bo
       break;
     }
     ret = *code;
-    sqc_msg_debug(5, "RPC %s: Received a reply: code=%d (%s), msg='%s'",
+    sqc_msg_debug(5, "RPC %s: Received a reply: code=%d (%s), msg='%s'\n",
+                  rpc_message_name_string(id), (int) *code, sqc_error_get_string(*code), *msg);
+  } while (0);
+
+  free(body);
+  free(reply_body);
+
+  return ret;
+}
+
+
+static sqc_result_t
+s_adm_set_group_exec_time_limit(rpc_session_client_t *rpc_session,
+                                const char *group_id, uint64_t exec_time_limit,
+                                sqc_result_t *code, char **msg) {
+  sqc_result_t ret = SQC_RESULT_ANY_FAILURES;
+  char *body = NULL;
+  size_t len = 0u;
+  const rpc_msg_id_t id = RPC_MSG_ADM_SET_GROUP_EXEC_TIME_LIMIT_REQUEST;
+  rpc_msg_id_t reply_id = 0u;
+  char *reply_body = NULL;
+  size_t reply_len = 0u;
+
+  if (rpc_session == NULL || code == NULL || msg == NULL) {
+    ret = SQC_RESULT_INVALID_ARGS;
+    sqc_msg_error("RPC %s: %s\n", rpc_message_name_string(id), sqc_error_get_string(ret));
+    rpc_create_message_text(msg, "RPC %s: %s", rpc_message_name_string(id), sqc_error_get_string(ret));
+    return ret;
+  }
+
+  do {
+    ret = rpc_pack_adm_set_group_exec_time_limit_request(group_id, exec_time_limit, &body, &len);
+    if (ret != SQC_RESULT_OK) {
+      ret = SQC_RESULT_NO_MEMORY;
+      rpc_create_message_text(msg, "RPC %s: Failed to create a request: %s",
+                              rpc_message_name_string(id), sqc_error_get_string(ret));
+      rpc_log_debug_msg(5, *msg);
+      break;
+    }
+
+    ret = s_request(rpc_session, id, body, len, &reply_id, &reply_body, &reply_len, msg);
+    if (ret != SQC_RESULT_OK) {
+      rpc_create_message_text(msg, "RPC %s: Procedure failed, %s",
+                              rpc_message_name_string(id), sqc_error_get_string(ret));
+      rpc_log_debug_msg(5, *msg);
+      break;
+    }
+
+    if (reply_id != RPC_MSG_ADM_SET_GROUP_EXEC_TIME_LIMIT_REPLY) {
+      ret = SQC_RESULT_INVALID_OBJECT;
+      rpc_create_message_text(msg, "RPC %s: Received an unexpected reply: msg_id=%u (%s)",
+                              rpc_message_name_string(id), (unsigned int) reply_id,
+                              rpc_message_id_string(reply_id));
+      rpc_log_debug_msg(5, *msg);
+      break;
+    }
+
+    ret = rpc_unpack_adm_set_group_exec_time_limit_reply(reply_body, reply_len, code, msg);
+    if (ret != SQC_RESULT_OK) {
+      rpc_create_message_text(msg, "RPC %s: Failed to unpack the received reply data: %s",
+                              rpc_message_name_string(id), rpc_message_id_string(ret));
+      rpc_log_debug_msg(5, *msg);
+      break;
+    }
+
+    ret = *code;
+    sqc_msg_debug(5, "RPC %s: Received a reply: code=%d (%s), msg='%s'\n",
+                  rpc_message_name_string(id), (int) *code, sqc_error_get_string(*code), *msg);
+  } while (0);
+
+  free(body);
+  free(reply_body);
+
+  return ret;
+}
+
+
+static sqc_result_t
+s_adm_set_user_group_status(rpc_session_client_t *rpc_session, const char *user_id,
+                            const char *group_id, bool enabled,
+                            sqc_result_t *code, char **msg) {
+  sqc_result_t ret = SQC_RESULT_ANY_FAILURES;
+  char *body = NULL;
+  size_t len = 0u;
+  const rpc_msg_id_t id = RPC_MSG_ADM_SET_USER_GROUP_STATUS_REQUEST;
+  rpc_msg_id_t reply_id = 0u;
+  char *reply_body = NULL;
+  size_t reply_len = 0u;
+
+  if (rpc_session == NULL || code == NULL || msg == NULL) {
+    ret = SQC_RESULT_INVALID_ARGS;
+    sqc_msg_error("RPC %s: %s\n", rpc_message_name_string(id), sqc_error_get_string(ret));
+    rpc_create_message_text(msg, "RPC %s: %s", rpc_message_name_string(id), sqc_error_get_string(ret));
+    return ret;
+  }
+
+  do {
+    ret = rpc_pack_adm_set_user_group_status_request(user_id, group_id, enabled, &body, &len);
+    if (ret != SQC_RESULT_OK) {
+      ret = SQC_RESULT_NO_MEMORY;
+      rpc_create_message_text(msg, "RPC %s: Failed to create a request: %s",
+                    rpc_message_name_string(id), sqc_error_get_string(ret));
+      rpc_log_debug_msg(5, *msg);
+      break;
+    }
+
+    ret = s_request(rpc_session, id, body, len, &reply_id, &reply_body, &reply_len, msg);
+    if (ret != SQC_RESULT_OK) {
+      rpc_create_message_text(msg, "RPC %s: Procedure failed, %s",
+                              rpc_message_name_string(id), sqc_error_get_string(ret));
+      rpc_log_debug_msg(5, *msg);
+      break;
+    }
+
+    if (reply_id != RPC_MSG_ADM_SET_USER_GROUP_STATUS_REPLY) {
+      ret = SQC_RESULT_INVALID_OBJECT;
+      rpc_create_message_text(msg, "RPC %s: Received an unexpected reply: msg_id=%u (%s)",
+                              rpc_message_name_string(id), (unsigned int) reply_id,
+                              rpc_message_id_string(reply_id));
+      rpc_log_debug_msg(5, *msg);
+      break;
+    }
+
+    ret = rpc_unpack_adm_set_user_group_status_reply(reply_body, reply_len, code, msg);
+    if (ret != SQC_RESULT_OK) {
+      rpc_create_message_text(msg, "RPC %s: Failed to unpack the received reply data: %s",
+                    rpc_message_name_string(id), rpc_message_id_string(ret));
+      rpc_log_debug_msg(5, *msg);
+      break;
+    }
+
+    ret = *code;
+    sqc_msg_debug(5, "RPC %s: Received a reply: code=%d (%s), msg='%s'\n",
                   rpc_message_name_string(id), (int) *code, sqc_error_get_string(*code), *msg);
   } while (0);
 
@@ -1047,10 +1180,11 @@ rpc_session_client_destroy(rpc_session_client_t *rpc_session) {
 sqc_result_t
 rpc_session_client_submit_job(rpc_session_client_t *rpc_session, uint8_t priority, const char *qprogram,
                               sqc_rpc_sched_circuit_fmt_t circuit_fmt, size_t shots, sqc_rpc_sched_qc_type_t qc_type,
-                              sqc_rpc_sched_transpiler_t transpiler, const char *remark, const char *user_token,
+                              sqc_rpc_sched_transpiler_t transpiler, const char *remark,
+                              const char *user_token, const char *group_id,
                               sqc_result_t *code, char **msg, char **job_id) {
   return s_submit_job(rpc_session, priority, qprogram, circuit_fmt, shots, qc_type, transpiler,
-                      remark, user_token, code, msg, job_id);
+                      remark, user_token, group_id, code, msg, job_id);
 }
 
 
@@ -1101,4 +1235,18 @@ sqc_result_t
 rpc_session_client_adm_set_user_status(rpc_session_client_t *rpc_session, const char *user_id, bool enabled,
                                        sqc_result_t *code, char **msg) {
   return s_adm_set_user_status(rpc_session, user_id, enabled, code, msg);
+}
+
+sqc_result_t
+rpc_session_client_adm_set_group_exec_time_limit(rpc_session_client_t *rpc_session,
+                                                 const char *group_id, uint64_t exec_time_limit,
+                                                 sqc_result_t *code, char **msg) {
+  return s_adm_set_group_exec_time_limit(rpc_session, group_id, exec_time_limit, code, msg);
+}
+
+sqc_result_t
+rpc_session_client_adm_set_user_group_status(rpc_session_client_t *rpc_session, const char *user_id,
+                                             const char *group_id, bool enabled,
+                                             sqc_result_t *code, char **msg) {
+  return s_adm_set_user_group_status(rpc_session, user_id, group_id, enabled, code, msg);
 }

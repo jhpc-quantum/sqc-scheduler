@@ -28,6 +28,10 @@ Currently, the simple SQC server supports Qiskit Aer.
 
 Detailed instructions can be found under `gRPC on HTTPS with JWT Authentication` section of [Install and Configure SQC Scheduler(Server)](INSTALL_SERVER.md).
 
+> [!NOTE]
+> For simple-sqc, use `${SIMPLE_SQC_HOME}/etc` instead of
+> `${SQC_HOME}/etc/sqc-scheduler` (no `sqc-scheduler` subdirectory).
+
 2.Create the user DB file.
 Set the user ID (JWT sub) on one line per user.
 ```
@@ -45,6 +49,10 @@ fbd8f3b7-9697-4d2e-ab32-f1ad38b9e13a
 3.Put Files for Server
  Detailed instructions can be found under `gRPC on HTTPS with JWT Authentication` in [Install and Configure SQC Scheduler(Server)](INSTALL_SERVER.md).
 
+> [!NOTE]
+> For simple-sqc, use `${SIMPLE_SQC_HOME}/etc` instead of
+> `${SQC_HOME}/etc/sqc-scheduler` (no `sqc-scheduler` subdirectory).
+
 4.Run Server
 ```
 $ ${SIMPLE_SQC_HOME}/bin/run_simple_sqc_server.sh 0.0.0.0:30002
@@ -59,9 +67,18 @@ The argument `0.0.0.0:30002` is an address and a port that the server listens on
 
 Detailed instructions can be found under `gRPC on HTTPS with JWT Authentication` section of [Install and Configure SQC Scheduler(Client)](INSTALL_CLIENT.md).
 
+> [!NOTE]
+> This path (`~/.sqc-scheduler`) is the same regardless of server type,
+> so no change is needed for simple-sqc.
+
 2.Run Client
 
 Detailed instructions can be found under `grpc_client(gRPC)` section of [Install and Configure SQC Scheduler(Client)](INSTALL_CLIENT.md).
+
+> [!NOTE]
+> For simple-sqc, the `grpc_client` binary is installed at
+> `${SIMPLE_SQC_HOME}/bin/grpc_client` instead of
+> `${SQC_HOME}/grpc-job-broker/bin/grpc_client`.
 
 Note that the simple SQC server only accepts `submit` and `status` sub-commands
 of `grpc_client`.

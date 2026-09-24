@@ -13,6 +13,12 @@ This document consolidates server-side installation and configuration for all su
 $ export SQC_HOME=${SQC_HOME:-${HOME}/.local}
 ```
 
+> [!NOTE]
+> Running sqc-scheduler does not require root privileges. The commands in this document
+> avoid `sudo` on the assumption that `SQC_HOME` points to a location writable by the
+> current user (e.g. the default `${HOME}/.local`). If you set `SQC_HOME` to a location
+> that requires root privileges to create directories or files in, use `sudo` as needed.
+
 ## DB Setting
 
 1.Create DB files and tables
@@ -49,9 +55,9 @@ Example:
     "sub": "dcaf1157-954c-442b-b26f-5597d98c6621",
 ```
 
-Put the following line in `sample_add_user.sql`.
+Add the user name to the scheduler DB using `db-util.sh`.
 ```
-INSERT INTO user_info VALUES("dcaf1157-954c-442b-b26f-5597d98c6621");
+$ ./scripts/db-util.sh user add "dcaf1157-954c-442b-b26f-5597d98c6621" general enable
 ```
 
 #### Mutual TLS
@@ -63,9 +69,9 @@ $ openssl x509 -text -in client.crt | grep 'Subject:'
         Subject: C = JP, ST = Tokyo, O = Example, CN = Alice
 ```
 
-Put the following line in `sample_add_user.sql`.
+Add the user name to the scheduler DB using `db-util.sh`.
 ```
-INSERT INTO user_info VALUES("C = JP, ST = Tokyo, O = Example, CN = Alice");
+$ ./scripts/db-util.sh user add "C = JP, ST = Tokyo, O = Example, CN = Alice" general enable
 ```
 
 ## Authentication-specific Settings
@@ -112,28 +118,23 @@ For the RPC scheduler:
 
 Put a server certificate and a private key.
 ```
-$ sudo mkdir -p ${SQC_HOME}/etc/sqc-scheduler
-$ sudo cp server.crt ${SQC_HOME}/etc/sqc-scheduler/server.crt
-$ sudo cp server.key ${SQC_HOME}/etc/sqc-scheduler/server.key
-$ sudo chmod 0600 ${SQC_HOME}/etc/sqc-scheduler/server.key
+$ mkdir -p ${SQC_HOME}/etc/sqc-scheduler
+$ cp server.crt ${SQC_HOME}/etc/sqc-scheduler/server.crt
+$ cp server.key ${SQC_HOME}/etc/sqc-scheduler/server.key
+$ chmod 0600 ${SQC_HOME}/etc/sqc-scheduler/server.key
 ```
 
 Put a CA certificate.
 ```
-$ sudo mkdir -p ${SQC_HOME}/etc/sqc-scheduler/ca
-$ sudo cp ca.crt ${SQC_HOME}/etc/sqc-scheduler/ca/ca.crt
-$ sudo ln -s ca.crt ${SQC_HOME}/etc/sqc-scheduler/ca/$(openssl x509 -hash -noout -in ${SQC_HOME}/etc/sqc-scheduler/ca/ca.crt).0
+$ mkdir -p ${SQC_HOME}/etc/sqc-scheduler/ca
+$ cp ca.crt ${SQC_HOME}/etc/sqc-scheduler/ca/ca.crt
+$ ln -s ca.crt ${SQC_HOME}/etc/sqc-scheduler/ca/$(openssl x509 -hash -noout -in ${SQC_HOME}/etc/sqc-scheduler/ca/ca.crt).0
 ```
 
 Put a public key for JWT (key for verifying JWT's signature) and an issuer (a text file in which an expected issuer of JWT is written).
 ```
-$ sudo cp jwt_pub.key ${SQC_HOME}/etc/sqc-scheduler/jwt_pub.key
-$ sudo cp jwt_iss.txt ${SQC_HOME}/etc/sqc-scheduler/jwt_iss.txt
-```
-
-Change owners of files and directories to the user who runs the RPC scheduler (denoted as `<RUN_USER>`).
-```
-$ sudo chown -R <RUN_USER> ${SQC_HOME}/etc/sqc-scheduler
+$ cp jwt_pub.key ${SQC_HOME}/etc/sqc-scheduler/jwt_pub.key
+$ cp jwt_iss.txt ${SQC_HOME}/etc/sqc-scheduler/jwt_iss.txt
 ```
 
 ### TLS on TCP with Mutual TLS Authentication
@@ -151,22 +152,17 @@ For the RPC scheduler:
 
 Put a server certificate and a private key.
 ```
-$ sudo mkdir -p ${SQC_HOME}/etc/sqc-scheduler
-$ sudo cp server.crt ${SQC_HOME}/etc/sqc-scheduler/server.crt
-$ sudo cp server.key ${SQC_HOME}/etc/sqc-scheduler/server.key
-$ sudo chmod 0600 ${SQC_HOME}/etc/sqc-scheduler/server.key
+$ mkdir -p ${SQC_HOME}/etc/sqc-scheduler
+$ cp server.crt ${SQC_HOME}/etc/sqc-scheduler/server.crt
+$ cp server.key ${SQC_HOME}/etc/sqc-scheduler/server.key
+$ chmod 0600 ${SQC_HOME}/etc/sqc-scheduler/server.key
 ```
 
 Put a CA certificate.
 ```
-$ sudo mkdir -p ${SQC_HOME}/etc/sqc-scheduler/ca
-$ sudo cp ca.crt ${SQC_HOME}/etc/sqc-scheduler/ca/ca.crt
-$ sudo ln -s ca.crt ${SQC_HOME}/etc/sqc-scheduler/ca/$(openssl x509 -hash -noout -in ${SQC_HOME}/etc/sqc-scheduler/ca/ca.crt).0
-```
-
-Change owners of files and directories to the user who runs the RPC scheduler (denoted as `<RUN_USER>`).
-```
-$ sudo chown -R <RUN_USER> ${SQC_HOME}/etc/sqc-scheduler
+$ mkdir -p ${SQC_HOME}/etc/sqc-scheduler/ca
+$ cp ca.crt ${SQC_HOME}/etc/sqc-scheduler/ca/ca.crt
+$ ln -s ca.crt ${SQC_HOME}/etc/sqc-scheduler/ca/$(openssl x509 -hash -noout -in ${SQC_HOME}/etc/sqc-scheduler/ca/ca.crt).0
 ```
 
 ### gRPC on HTTPS with JWT Authentication
@@ -188,27 +184,22 @@ For the RPC scheduler:
 
 Put a server certificate and a private key.
 ```
-$ sudo mkdir -p ${SQC_HOME}/etc/sqc-scheduler
-$ sudo cp grpc_server.crt ${SQC_HOME}/etc/sqc-scheduler/grpc_server.crt
-$ sudo cp grpc_server.key ${SQC_HOME}/etc/sqc-scheduler/grpc_server.key
-$ sudo chmod 0600 ${SQC_HOME}/etc/sqc-scheduler/grpc_server.key
+$ mkdir -p ${SQC_HOME}/etc/sqc-scheduler
+$ cp grpc_server.crt ${SQC_HOME}/etc/sqc-scheduler/grpc_server.crt
+$ cp grpc_server.key ${SQC_HOME}/etc/sqc-scheduler/grpc_server.key
+$ chmod 0600 ${SQC_HOME}/etc/sqc-scheduler/grpc_server.key
 ```
 
 Put a CA certificate.
 ```
-$ sudo mkdir -p ${SQC_HOME}/etc/sqc-scheduler/ca
-$ sudo cp grpc_ca.crt ${SQC_HOME}/etc/sqc-scheduler/ca/grpc_ca.crt
+$ mkdir -p ${SQC_HOME}/etc/sqc-scheduler/ca
+$ cp grpc_ca.crt ${SQC_HOME}/etc/sqc-scheduler/ca/grpc_ca.crt
 ```
 
 Put a public key for JWT (key for verifying JWT's signature) and an issuer (a text file in which an expected issuer of JWT is written).
 ```
-$ sudo cp jwt_pub.key ${SQC_HOME}/etc/sqc-scheduler/jwt_pub.key
-$ sudo cp jwt_iss.txt ${SQC_HOME}/etc/sqc-scheduler/jwt_iss.txt
-```
-
-Change owners of files and directories to the user who runs the RPC scheduler (denoted as `<RUN_USER>`).
-```
-$ sudo chown -R <RUN_USER> ${SQC_HOME}/etc/sqc-scheduler
+$ cp jwt_pub.key ${SQC_HOME}/etc/sqc-scheduler/jwt_pub.key
+$ cp jwt_iss.txt ${SQC_HOME}/etc/sqc-scheduler/jwt_iss.txt
 ```
 
 ## Log
