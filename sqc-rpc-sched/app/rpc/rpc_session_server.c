@@ -123,10 +123,10 @@ s_create(rpc_session_server_t *rpc_session, int fd, struct sockaddr_storage *add
         create_result = sqc_session_create_server(&(tmp_rpc_session->session_), 0u,
                                                   fd, addr, addrlen);
         if (likely(create_result == SQC_RESULT_OK)) {
-          ret = s_log_peer_name(&tmp_rpc_session);
-          if (likely(ret == SQC_RESULT_OK)) {
-            *rpc_session = tmp_rpc_session;
-          }
+          // 'fd' is now owned by the session, so do not fail after this point.
+          (void)s_log_peer_name(&tmp_rpc_session);
+          *rpc_session = tmp_rpc_session;
+          ret = SQC_RESULT_OK;
         } else {
           ret = create_result;
         }

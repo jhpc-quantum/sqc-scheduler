@@ -18,7 +18,11 @@ void tearDown(void) {
   remove_db_files("tearDown - job_info");
 }
 
-void test_job_info_initialize_finalize(void) {
+/*
+ * Positive test cases for private methods
+ */
+
+void test_s_dbmgr_job_info_initialize_finalize(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
 
   // initialize
@@ -42,7 +46,7 @@ void test_job_info_initialize_finalize(void) {
   }
 }
 
-void test_job_info_free_in_finalize(void) {
+void test_s_dbmgr_job_info_record_freeup(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
   const char *group_id = "test-group";
@@ -87,12 +91,13 @@ void test_job_info_free_in_finalize(void) {
   TEST_ASSERT_NULL(sqc_rpc_sched_db);
 }
 
-void test_job_info_record_create_destroy(void) {
+void test_s_dbmgr_job_info_record_create_destroy(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
   const char *group_id = "test-group";
   const uint8_t priority = 5;
   const size_t user_id_len = strlen(user_id);
+  const size_t group_id_len = strlen(group_id);
   const char *qprogram = "test-qprogram-data";
   const size_t qprogram_len = strlen(qprogram);
   const sqc_rpc_sched_circuit_fmt_t circuit_fmt = SQC_RPC_SCHED_CIRCUIT_FMT_QIR;
@@ -116,6 +121,8 @@ void test_job_info_record_create_destroy(void) {
     TEST_ASSERT_EQUAL(SQC_RPC_SCHED_JOB_ID_MAX_SIZE, strlen(ji_ptr->job_id));
     TEST_ASSERT_EQUAL_STRING(user_id, ji_ptr->user_id);
     TEST_ASSERT_EQUAL(user_id_len, ji_ptr->user_id_len);
+    TEST_ASSERT_EQUAL_STRING(group_id, ji_ptr->group_id);
+    TEST_ASSERT_EQUAL(group_id_len, ji_ptr->group_id_len);
     TEST_ASSERT_EQUAL(priority, ji_ptr->priority);
     TEST_ASSERT_EQUAL(expected_status, ji_ptr->status);
     TEST_ASSERT_EQUAL_STRING(qprogram, ji_ptr->qprogram);
@@ -138,7 +145,7 @@ void test_job_info_record_create_destroy(void) {
   }
 }
 
-void test_job_info_record_add_delete(void) {
+void test_s_dbmgr_job_info_record_add_delete(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
   const char *group_id = "test-group";
@@ -201,7 +208,11 @@ void test_job_info_record_add_delete(void) {
   actual_job_id = NULL;
 }
 
-void test_ji_job_create_delete(void) {
+/*
+ * Positive test cases for public methods
+ */
+
+void test_dbmgr_ji_create_delete_job(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
   const char *group_id = "test-group";
@@ -247,7 +258,7 @@ void test_ji_job_create_delete(void) {
   TEST_ASSERT_NULL(sqc_rpc_sched_db);
 }
 
-void test_ji_job_exists(void) {
+void test_dbmgr_ji_job_exists(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
   const char *group_id = "test-group";
@@ -299,7 +310,7 @@ void test_ji_job_exists(void) {
   TEST_ASSERT_NULL(sqc_rpc_sched_db);
 }
 
-void test_ji_is_deletable(void) {
+void test_dbmgr_ji_is_deletable(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
 
   const size_t target_data_size = 7;
@@ -419,7 +430,7 @@ void test_ji_is_deletable(void) {
   TEST_ASSERT_NULL(sqc_rpc_sched_db);
 }
 
-void test_ji_job_find(void) {
+void test_dbmgr_ji_job_find(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
   const char *group_id = "test-group";
@@ -483,7 +494,7 @@ void test_ji_job_find(void) {
   TEST_ASSERT_NULL(sqc_rpc_sched_db);
 }
 
-void test_ji_job_find_by_user_id(void) {
+void test_dbmgr_ji_job_find_by_user_id(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
 
   const size_t target_data_size = 10;
@@ -587,7 +598,7 @@ void test_ji_job_find_by_user_id(void) {
   TEST_ASSERT_NULL(sqc_rpc_sched_db);
 }
 
-void test_ji_job_find_by_job_status(void) {
+void test_dbmgr_ji_job_find_by_job_status(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
 
   const size_t target_data_size = 10;
@@ -755,7 +766,7 @@ void test_ji_job_find_by_job_status(void) {
   TEST_ASSERT_NULL(sqc_rpc_sched_db);
 }
 
-void test_ji_job_find_by_created_time(void) {
+void test_dbmgr_ji_job_find_by_created_time(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
 
   const size_t target_data_size = 10;
@@ -870,7 +881,7 @@ void test_ji_job_find_by_created_time(void) {
   TEST_ASSERT_NULL(sqc_rpc_sched_db);
 }
 
-void test_ji_job_find_by_delete_target(void) {
+void test_dbmgr_ji_job_find_by_delete_target(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
 
   const size_t target_data_size = 3;
@@ -1022,7 +1033,7 @@ void test_ji_job_find_by_delete_target(void) {
   TEST_ASSERT_NULL(sqc_rpc_sched_db);
 }
 
-void test_ji_job_find_by_delete_target_all(void) {
+void test_dbmgr_ji_job_find_by_delete_target_all(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
 
   const size_t target_data_size = 3;
@@ -1185,7 +1196,7 @@ void test_ji_job_find_by_delete_target_all(void) {
   TEST_ASSERT_NULL(sqc_rpc_sched_db);
 }
 
-void test_ji_get_job_id(void) {
+void test_dbmgr_ji_get_job_id(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
   const char *group_id = "test-group";
@@ -1247,7 +1258,7 @@ void test_ji_get_job_id(void) {
   TEST_ASSERT_NULL(sqc_rpc_sched_db);
 }
 
-void test_ji_get_user_id(void) {
+void test_dbmgr_ji_get_user_id(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
   const char *group_id = "test-group";
@@ -1304,7 +1315,7 @@ void test_ji_get_user_id(void) {
   TEST_ASSERT_NULL(sqc_rpc_sched_db);
 }
 
-void test_ji_get_user_id_len(void) {
+void test_dbmgr_ji_get_user_id_len(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
   const size_t user_id_len = strlen(user_id);
@@ -1359,7 +1370,7 @@ void test_ji_get_user_id_len(void) {
   TEST_ASSERT_NULL(sqc_rpc_sched_db);
 }
 
-void test_ji_get_group_id(void) {
+void test_dbmgr_ji_get_group_id(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
   const char *group_id = "test-group";
@@ -1416,7 +1427,7 @@ void test_ji_get_group_id(void) {
   TEST_ASSERT_NULL(sqc_rpc_sched_db);
 }
 
-void test_ji_get_group_id_len(void) {
+void test_dbmgr_ji_get_group_id_len(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
   const char *group_id = "test-group";
@@ -1471,7 +1482,7 @@ void test_ji_get_group_id_len(void) {
   TEST_ASSERT_NULL(sqc_rpc_sched_db);
 }
 
-void test_ji_get_priority(void) {
+void test_dbmgr_ji_get_priority(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
   const char *group_id = "test-group";
@@ -1525,7 +1536,7 @@ void test_ji_get_priority(void) {
   TEST_ASSERT_NULL(sqc_rpc_sched_db);
 }
 
-void test_ji_set_get_status(void) {
+void test_dbmgr_ji_set_get_status(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
   const char *group_id = "test-group";
@@ -1542,6 +1553,10 @@ void test_ji_set_get_status(void) {
   sqc_chrono_t actual_queued_time = 0;
   sqc_chrono_t actual_running_time = 0;
   sqc_chrono_t actual_done_time = 0;
+  sqc_chrono_t actual_cancelled_time = 0;
+  sqc_chrono_t actual_error_time = 0;
+  sqc_chrono_t actual_deleted_time = 0;
+  sqc_chrono_t actual_update_time = 0;
 
   // initialize
   {
@@ -1569,6 +1584,28 @@ void test_ji_set_get_status(void) {
     TEST_ASSERT_EQUAL(SQC_RPC_SCHED_JOB_STATUS_CREATED, actual_status);
   }
 
+  // get status times (not yet transitioned)
+  {
+    rc = dbmgr_ji_get_queued_time(ji_ptr, &actual_queued_time);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+    TEST_ASSERT_EQUAL_INT64(0, actual_queued_time);
+    rc = dbmgr_ji_get_running_time(ji_ptr, &actual_running_time);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+    TEST_ASSERT_EQUAL_INT64(0, actual_running_time);
+    rc = dbmgr_ji_get_done_time(ji_ptr, &actual_done_time);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+    TEST_ASSERT_EQUAL_INT64(0, actual_done_time);
+    rc = dbmgr_ji_get_cancelled_time(ji_ptr, &actual_cancelled_time);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+    TEST_ASSERT_EQUAL_INT64(0, actual_cancelled_time);
+    rc = dbmgr_ji_get_error_time(ji_ptr, &actual_error_time);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+    TEST_ASSERT_EQUAL_INT64(0, actual_error_time);
+    rc = dbmgr_ji_get_deleted_time(ji_ptr, &actual_deleted_time);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+    TEST_ASSERT_EQUAL_INT64(0, actual_deleted_time);
+  }
+
   // get status
   {
     // to queued
@@ -1580,6 +1617,9 @@ void test_ji_set_get_status(void) {
     rc = dbmgr_ji_get_queued_time(ji_ptr, &actual_queued_time);
     TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
     TEST_ASSERT_GREATER_THAN(0, actual_queued_time);
+    rc = dbmgr_ji_get_update_time(ji_ptr, &actual_update_time);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+    TEST_ASSERT_EQUAL_INT64(actual_queued_time, actual_update_time);
 
     // to running
     rc = dbmgr_set_job_status_running(ji_ptr);
@@ -1590,6 +1630,10 @@ void test_ji_set_get_status(void) {
     rc = dbmgr_ji_get_running_time(ji_ptr, &actual_running_time);
     TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
     TEST_ASSERT_GREATER_THAN(0, actual_running_time);
+    rc = dbmgr_ji_get_update_time(ji_ptr, &actual_update_time);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+    TEST_ASSERT_EQUAL_INT64(actual_running_time, actual_update_time);
+    TEST_ASSERT_GREATER_OR_EQUAL_INT64(actual_queued_time, actual_running_time);
 
     // to done
     rc = dbmgr_set_job_status_done(ji_ptr);
@@ -1600,6 +1644,10 @@ void test_ji_set_get_status(void) {
     rc = dbmgr_ji_get_done_time(ji_ptr, &actual_done_time);
     TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
     TEST_ASSERT_GREATER_THAN(0, actual_done_time);
+    rc = dbmgr_ji_get_update_time(ji_ptr, &actual_update_time);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+    TEST_ASSERT_EQUAL_INT64(actual_done_time, actual_update_time);
+    TEST_ASSERT_GREATER_OR_EQUAL_INT64(actual_running_time, actual_done_time);
   }
 
   // delete job
@@ -1615,7 +1663,7 @@ void test_ji_set_get_status(void) {
   TEST_ASSERT_NULL(sqc_rpc_sched_db);
 }
 
-void test_ji_set_get_status_cancelled(void) {
+void test_dbmgr_ji_set_get_status_cancelled(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
   const char *group_id = "test-group";
@@ -1629,6 +1677,9 @@ void test_ji_set_get_status_cancelled(void) {
   const char *user_token = "test-user_token-data";
   dbmgr_job_info_t ji_ptr = NULL;
   sqc_rpc_sched_job_status_t actual_status = SQC_RPC_SCHED_JOB_STATUS_UNKNOWN;
+  sqc_chrono_t actual_cancelled_time = 0;
+  sqc_chrono_t actual_deleted_time = 0;
+  sqc_chrono_t actual_update_time = 0;
 
   // initialize
   {
@@ -1664,6 +1715,26 @@ void test_ji_set_get_status_cancelled(void) {
     rc = dbmgr_ji_get_status(ji_ptr, &actual_status);
     TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
     TEST_ASSERT_EQUAL(SQC_RPC_SCHED_JOB_STATUS_CANCELLED, actual_status);
+    rc = dbmgr_ji_get_cancelled_time(ji_ptr, &actual_cancelled_time);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+    TEST_ASSERT_GREATER_THAN(0, actual_cancelled_time);
+    rc = dbmgr_ji_get_update_time(ji_ptr, &actual_update_time);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+    TEST_ASSERT_EQUAL_INT64(actual_cancelled_time, actual_update_time);
+
+    // to deleted
+    rc = dbmgr_set_job_status_deleted(ji_ptr);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+    rc = dbmgr_ji_get_status(ji_ptr, &actual_status);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+    TEST_ASSERT_EQUAL(SQC_RPC_SCHED_JOB_STATUS_DELETED, actual_status);
+    rc = dbmgr_ji_get_deleted_time(ji_ptr, &actual_deleted_time);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+    TEST_ASSERT_GREATER_THAN(0, actual_deleted_time);
+    TEST_ASSERT_GREATER_OR_EQUAL_INT64(actual_cancelled_time, actual_deleted_time);
+    rc = dbmgr_ji_get_update_time(ji_ptr, &actual_update_time);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+    TEST_ASSERT_EQUAL_INT64(actual_deleted_time, actual_update_time);
   }
 
   // delete job
@@ -1679,7 +1750,7 @@ void test_ji_set_get_status_cancelled(void) {
   TEST_ASSERT_NULL(sqc_rpc_sched_db);
 }
 
-void test_ji_set_get_status_error(void) {
+void test_dbmgr_ji_set_get_status_error(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
   const char *group_id = "test-group";
@@ -1693,6 +1764,8 @@ void test_ji_set_get_status_error(void) {
   const char *user_token = "test-user_token-data";
   dbmgr_job_info_t ji_ptr = NULL;
   sqc_rpc_sched_job_status_t actual_status = SQC_RPC_SCHED_JOB_STATUS_UNKNOWN;
+  sqc_chrono_t actual_error_time = 0;
+  sqc_chrono_t actual_update_time = 0;
 
   // initialize
   {
@@ -1728,6 +1801,12 @@ void test_ji_set_get_status_error(void) {
     rc = dbmgr_ji_get_status(ji_ptr, &actual_status);
     TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
     TEST_ASSERT_EQUAL(SQC_RPC_SCHED_JOB_STATUS_ERROR, actual_status);
+    rc = dbmgr_ji_get_error_time(ji_ptr, &actual_error_time);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+    TEST_ASSERT_GREATER_THAN(0, actual_error_time);
+    rc = dbmgr_ji_get_update_time(ji_ptr, &actual_update_time);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+    TEST_ASSERT_EQUAL_INT64(actual_error_time, actual_update_time);
   }
 
   // delete job
@@ -1743,8 +1822,206 @@ void test_ji_set_get_status_error(void) {
   TEST_ASSERT_NULL(sqc_rpc_sched_db);
 }
 
+void test_dbmgr_ji_set_get_status_cancelled_from_queued_running(void) {
+  sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
+  const char *user_id = "test-user";
+  const char *group_id = "test-group";
+  const uint8_t priority = 5;
+  const char *qprogram = "test-qprogram-data";
+  const sqc_rpc_sched_circuit_fmt_t circuit_fmt = SQC_RPC_SCHED_CIRCUIT_FMT_QIR;
+  const size_t shots = 30000;
+  const sqc_rpc_sched_qc_type_t qc_type = SQC_RPC_SCHED_QC_TYPE_RQC_REST;
+  const sqc_rpc_sched_transpiler_t transpiler = SQC_RPC_SCHED_TRANSPILER_NORMAL;
+  const char *remark = "test-remark-data";
+  const char *user_token = "test-user_token-data";
+  dbmgr_job_info_t queued_ji_ptr = NULL;
+  dbmgr_job_info_t running_ji_ptr = NULL;
+  sqc_rpc_sched_job_status_t actual_status = SQC_RPC_SCHED_JOB_STATUS_UNKNOWN;
+  sqc_chrono_t actual_cancelled_time = 0;
+  sqc_chrono_t actual_update_time = 0;
 
-void test_ji_set_get_qc_job_id(void) {
+  // initialize
+  {
+    rc = s_dbmgr_db_initialize(SQC_RPC_SCHED_UT_DB_FILE);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+    TEST_ASSERT_NOT_NULL(sqc_rpc_sched_db);
+
+    rc = s_dbmgr_job_info_initialize();
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+  }
+
+  // create job
+  {
+    rc = dbmgr_ji_create_job(user_id, group_id, priority,
+                             qprogram, circuit_fmt, shots,
+                             qc_type, transpiler,
+                             remark, user_token, &queued_ji_ptr);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+
+    rc = dbmgr_ji_create_job(user_id, group_id, priority,
+                             qprogram, circuit_fmt, shots,
+                             qc_type, transpiler,
+                             remark, user_token, &running_ji_ptr);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+  }
+
+  // to queued / running
+  {
+    rc = dbmgr_set_job_status_queued(queued_ji_ptr);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+
+    rc = dbmgr_set_job_status_queued(running_ji_ptr);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+    rc = dbmgr_set_job_status_running(running_ji_ptr);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+  }
+
+  // queued -> cancelled
+  {
+    rc = dbmgr_set_job_status_cancelled(queued_ji_ptr);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+    rc = dbmgr_ji_get_status(queued_ji_ptr, &actual_status);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+    TEST_ASSERT_EQUAL(SQC_RPC_SCHED_JOB_STATUS_CANCELLED, actual_status);
+    rc = dbmgr_ji_get_cancelled_time(queued_ji_ptr, &actual_cancelled_time);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+    TEST_ASSERT_GREATER_THAN(0, actual_cancelled_time);
+    rc = dbmgr_ji_get_update_time(queued_ji_ptr, &actual_update_time);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+    TEST_ASSERT_EQUAL_INT64(actual_cancelled_time, actual_update_time);
+  }
+
+  // running -> cancelled
+  {
+    rc = dbmgr_set_job_status_cancelled(running_ji_ptr);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+    rc = dbmgr_ji_get_status(running_ji_ptr, &actual_status);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+    TEST_ASSERT_EQUAL(SQC_RPC_SCHED_JOB_STATUS_CANCELLED, actual_status);
+    rc = dbmgr_ji_get_cancelled_time(running_ji_ptr, &actual_cancelled_time);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+    TEST_ASSERT_GREATER_THAN(0, actual_cancelled_time);
+    rc = dbmgr_ji_get_update_time(running_ji_ptr, &actual_update_time);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+    TEST_ASSERT_EQUAL_INT64(actual_cancelled_time, actual_update_time);
+  }
+
+  // delete job
+  {
+    rc = dbmgr_ji_delete_job(queued_ji_ptr->job_id);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+    rc = dbmgr_ji_delete_job(running_ji_ptr->job_id);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+  }
+
+  // finalize
+  s_dbmgr_job_info_finalize();
+
+  s_dbmgr_db_finalize();
+  TEST_ASSERT_NULL(sqc_rpc_sched_db);
+}
+
+void test_dbmgr_ji_set_get_status_error_from_queued_running(void) {
+  sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
+  const char *user_id = "test-user";
+  const char *group_id = "test-group";
+  const uint8_t priority = 5;
+  const char *qprogram = "test-qprogram-data";
+  const sqc_rpc_sched_circuit_fmt_t circuit_fmt = SQC_RPC_SCHED_CIRCUIT_FMT_QIR;
+  const size_t shots = 30000;
+  const sqc_rpc_sched_qc_type_t qc_type = SQC_RPC_SCHED_QC_TYPE_RQC_REST;
+  const sqc_rpc_sched_transpiler_t transpiler = SQC_RPC_SCHED_TRANSPILER_NORMAL;
+  const char *remark = "test-remark-data";
+  const char *user_token = "test-user_token-data";
+  dbmgr_job_info_t queued_ji_ptr = NULL;
+  dbmgr_job_info_t running_ji_ptr = NULL;
+  sqc_rpc_sched_job_status_t actual_status = SQC_RPC_SCHED_JOB_STATUS_UNKNOWN;
+  sqc_chrono_t actual_error_time = 0;
+  sqc_chrono_t actual_update_time = 0;
+
+  // initialize
+  {
+    rc = s_dbmgr_db_initialize(SQC_RPC_SCHED_UT_DB_FILE);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+    TEST_ASSERT_NOT_NULL(sqc_rpc_sched_db);
+
+    rc = s_dbmgr_job_info_initialize();
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+  }
+
+  // create job
+  {
+    rc = dbmgr_ji_create_job(user_id, group_id, priority,
+                             qprogram, circuit_fmt, shots,
+                             qc_type, transpiler,
+                             remark, user_token, &queued_ji_ptr);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+
+    rc = dbmgr_ji_create_job(user_id, group_id, priority,
+                             qprogram, circuit_fmt, shots,
+                             qc_type, transpiler,
+                             remark, user_token, &running_ji_ptr);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+  }
+
+  // to queued / running
+  {
+    rc = dbmgr_set_job_status_queued(queued_ji_ptr);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+
+    rc = dbmgr_set_job_status_queued(running_ji_ptr);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+    rc = dbmgr_set_job_status_running(running_ji_ptr);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+  }
+
+  // queued -> error
+  {
+    rc = dbmgr_set_job_status_error(queued_ji_ptr);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+    rc = dbmgr_ji_get_status(queued_ji_ptr, &actual_status);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+    TEST_ASSERT_EQUAL(SQC_RPC_SCHED_JOB_STATUS_ERROR, actual_status);
+    rc = dbmgr_ji_get_error_time(queued_ji_ptr, &actual_error_time);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+    TEST_ASSERT_GREATER_THAN(0, actual_error_time);
+    rc = dbmgr_ji_get_update_time(queued_ji_ptr, &actual_update_time);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+    TEST_ASSERT_EQUAL_INT64(actual_error_time, actual_update_time);
+  }
+
+  // running -> error
+  {
+    rc = dbmgr_set_job_status_error(running_ji_ptr);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+    rc = dbmgr_ji_get_status(running_ji_ptr, &actual_status);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+    TEST_ASSERT_EQUAL(SQC_RPC_SCHED_JOB_STATUS_ERROR, actual_status);
+    rc = dbmgr_ji_get_error_time(running_ji_ptr, &actual_error_time);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+    TEST_ASSERT_GREATER_THAN(0, actual_error_time);
+    rc = dbmgr_ji_get_update_time(running_ji_ptr, &actual_update_time);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+    TEST_ASSERT_EQUAL_INT64(actual_error_time, actual_update_time);
+  }
+
+  // delete job
+  {
+    rc = dbmgr_ji_delete_job(queued_ji_ptr->job_id);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+    rc = dbmgr_ji_delete_job(running_ji_ptr->job_id);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+  }
+
+  // finalize
+  s_dbmgr_job_info_finalize();
+
+  s_dbmgr_db_finalize();
+  TEST_ASSERT_NULL(sqc_rpc_sched_db);
+}
+
+
+void test_dbmgr_ji_set_get_qc_job_id(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
   const char *group_id = "test-group";
@@ -1811,7 +2088,7 @@ void test_ji_set_get_qc_job_id(void) {
   TEST_ASSERT_NULL(sqc_rpc_sched_db);
 }
 
-void test_ji_get_qprogram(void) {
+void test_dbmgr_ji_get_qprogram(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
   const char *group_id = "test-group";
@@ -1868,7 +2145,7 @@ void test_ji_get_qprogram(void) {
   TEST_ASSERT_NULL(sqc_rpc_sched_db);
 }
 
-void test_ji_get_qprogram_len(void) {
+void test_dbmgr_ji_get_qprogram_len(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
   const char *group_id = "test-group";
@@ -1923,7 +2200,7 @@ void test_ji_get_qprogram_len(void) {
   TEST_ASSERT_NULL(sqc_rpc_sched_db);
 }
 
-void test_ji_get_circuit_fmt(void) {
+void test_dbmgr_ji_get_circuit_fmt(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
   const char *group_id = "test-group";
@@ -1977,7 +2254,7 @@ void test_ji_get_circuit_fmt(void) {
   TEST_ASSERT_NULL(sqc_rpc_sched_db);
 }
 
-void test_ji_get_shots(void) {
+void test_dbmgr_ji_get_shots(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
   const char *group_id = "test-group";
@@ -2031,7 +2308,7 @@ void test_ji_get_shots(void) {
   TEST_ASSERT_NULL(sqc_rpc_sched_db);
 }
 
-void test_ji_get_qc_type(void) {
+void test_dbmgr_ji_get_qc_type(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
   const char *group_id = "test-group";
@@ -2085,7 +2362,7 @@ void test_ji_get_qc_type(void) {
   TEST_ASSERT_NULL(sqc_rpc_sched_db);
 }
 
-void test_ji_get_transpiler(void) {
+void test_dbmgr_ji_get_transpiler(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
   const char *group_id = "test-group";
@@ -2139,7 +2416,7 @@ void test_ji_get_transpiler(void) {
   TEST_ASSERT_NULL(sqc_rpc_sched_db);
 }
 
-void test_ji_get_remark(void) {
+void test_dbmgr_ji_get_remark(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
   const char *group_id = "test-group";
@@ -2196,7 +2473,7 @@ void test_ji_get_remark(void) {
   TEST_ASSERT_NULL(sqc_rpc_sched_db);
 }
 
-void test_ji_get_remark_len(void) {
+void test_dbmgr_ji_get_remark_len(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
   const char *group_id = "test-group";
@@ -2251,7 +2528,7 @@ void test_ji_get_remark_len(void) {
   TEST_ASSERT_NULL(sqc_rpc_sched_db);
 }
 
-void test_ji_set_get_result(void) {
+void test_dbmgr_ji_set_get_result(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
   const char *group_id = "test-group";
@@ -2352,7 +2629,7 @@ void test_ji_set_get_result(void) {
   TEST_ASSERT_NULL(sqc_rpc_sched_db);
 }
 
-void test_ji_get_user_token(void) {
+void test_dbmgr_ji_get_user_token(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
   const char *group_id = "test-group";
@@ -2409,7 +2686,7 @@ void test_ji_get_user_token(void) {
   TEST_ASSERT_NULL(sqc_rpc_sched_db);
 }
 
-void test_ji_get_user_token_len(void) {
+void test_dbmgr_ji_get_user_token_len(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
   const char *group_id = "test-group";
@@ -2464,7 +2741,7 @@ void test_ji_get_user_token_len(void) {
   TEST_ASSERT_NULL(sqc_rpc_sched_db);
 }
 
-void test_ji_set_get_exec_time_estimate_msec(void) {
+void test_dbmgr_ji_set_get_exec_time_estimate_msec(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
   const char *group_id = "test-group";
@@ -2526,7 +2803,7 @@ void test_ji_set_get_exec_time_estimate_msec(void) {
   TEST_ASSERT_NULL(sqc_rpc_sched_db);
 }
 
-void test_ji_set_get_exec_time_msec(void) {
+void test_dbmgr_ji_set_get_exec_time_msec(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
   const char *group_id = "test-group";
@@ -2588,7 +2865,7 @@ void test_ji_set_get_exec_time_msec(void) {
   TEST_ASSERT_NULL(sqc_rpc_sched_db);
 }
 
-void test_ji_get_created_time(void) {
+void test_dbmgr_ji_get_created_time(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
   const char *group_id = "test-group";
@@ -2622,7 +2899,7 @@ void test_ji_get_created_time(void) {
     TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
   }
 
-  // get create_time
+  // get created_time
   {
     rc = dbmgr_ji_get_created_time(ji_ptr, &actual_created_time);
     TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
@@ -2643,7 +2920,7 @@ void test_ji_get_created_time(void) {
   TEST_ASSERT_NULL(sqc_rpc_sched_db);
 }
 
-void test_ji_get_update_time(void) {
+void test_dbmgr_ji_get_update_time(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
   const char *group_id = "test-group";
@@ -2698,7 +2975,7 @@ void test_ji_get_update_time(void) {
   TEST_ASSERT_NULL(sqc_rpc_sched_db);
 }
 
-void test_ji_arr_sort_by_created_time(void) {
+void test_dbmgr_ji_job_arr_sort_by_created_time(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
 
   const size_t data_size = 3;
@@ -2848,12 +3125,259 @@ void test_ji_arr_sort_by_created_time(void) {
   TEST_ASSERT_NULL(sqc_rpc_sched_db);
 }
 
+void test_dbmgr_ji_clear_job_result(void) {
+  sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
+  const char *user_id = "test-user";
+  const char *group_id = "test-group";
+  const uint8_t priority = 5;
+  const char *qprogram = "test-qprogram-data";
+  const sqc_rpc_sched_circuit_fmt_t circuit_fmt = SQC_RPC_SCHED_CIRCUIT_FMT_QIR;
+  const size_t shots = 30000;
+  const sqc_rpc_sched_qc_type_t qc_type = SQC_RPC_SCHED_QC_TYPE_RQC_REST;
+  const sqc_rpc_sched_transpiler_t transpiler = SQC_RPC_SCHED_TRANSPILER_NORMAL;
+  const char *remark = "test-remark-data";
+  const char *user_token = "test-user_token-data";
+  const char *result = "test-result-data";
+  dbmgr_job_info_t ji_ptr = NULL;
+  sqc_rpc_sched_job_status_t actual_status = SQC_RPC_SCHED_JOB_STATUS_UNKNOWN;
+  char *actual_result = NULL;
+  size_t actual_result_len = 0;
+  char *actual_qprogram = NULL;
+  size_t actual_qprogram_len = 0;
+  sqc_chrono_t actual_deleted_time = 0;
+  sqc_chrono_t actual_update_time = 0;
+
+  // initialize
+  {
+    rc = s_dbmgr_db_initialize(SQC_RPC_SCHED_UT_DB_FILE);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+    TEST_ASSERT_NOT_NULL(sqc_rpc_sched_db);
+
+    rc = s_dbmgr_job_info_initialize();
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+  }
+
+  // create job
+  {
+    rc = dbmgr_ji_create_job(user_id, group_id, priority,
+                             qprogram, circuit_fmt, shots,
+                             qc_type, transpiler,
+                             remark, user_token, &ji_ptr);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+  }
+
+  // set result & to done
+  {
+    rc = dbmgr_ji_set_result(ji_ptr, result, strlen(result));
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+
+    rc = dbmgr_set_job_status_queued(ji_ptr);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+    rc = dbmgr_set_job_status_running(ji_ptr);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+    rc = dbmgr_set_job_status_done(ji_ptr);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+  }
+
+  // clear job result
+  {
+    rc = dbmgr_ji_clear_job_result(ji_ptr);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+
+    rc = dbmgr_ji_get_status(ji_ptr, &actual_status);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+    TEST_ASSERT_EQUAL(SQC_RPC_SCHED_JOB_STATUS_DELETED, actual_status);
+    rc = dbmgr_ji_get_result_len(ji_ptr, &actual_result_len);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+    TEST_ASSERT_EQUAL(0, actual_result_len);
+
+    rc = dbmgr_ji_get_result(ji_ptr, &actual_result);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+    TEST_ASSERT_EQUAL_STRING("", actual_result);
+    free((void *) actual_result);
+    actual_result = NULL;
+
+    rc = dbmgr_ji_get_qprogram(ji_ptr, &actual_qprogram);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+    TEST_ASSERT_EQUAL_STRING("", actual_qprogram);
+    free((void *) actual_qprogram);
+    actual_qprogram = NULL;
+
+    rc = dbmgr_ji_get_qprogram_len(ji_ptr, &actual_qprogram_len);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+    TEST_ASSERT_EQUAL(0, actual_qprogram_len);
+
+    rc = dbmgr_ji_get_deleted_time(ji_ptr, &actual_deleted_time);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+    TEST_ASSERT_GREATER_THAN(0, actual_deleted_time);
+
+    rc = dbmgr_ji_get_update_time(ji_ptr, &actual_update_time);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+    TEST_ASSERT_EQUAL_INT64(actual_deleted_time, actual_update_time);
+  }
+
+  // clear job result again (already deleted)
+  {
+    rc = dbmgr_ji_clear_job_result(ji_ptr);
+    TEST_ASSERT_EQUAL(SQC_RESULT_INVALID_STATE_TRANSITION, rc);
+  }
+
+  // delete job
+  {
+    rc = dbmgr_ji_delete_job(ji_ptr->job_id);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+  }
+
+  // finalize
+  s_dbmgr_job_info_finalize();
+
+  s_dbmgr_db_finalize();
+  TEST_ASSERT_NULL(sqc_rpc_sched_db);
+}
+
+void test_dbmgr_ji_clear_job_arr_result(void) {
+  sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
+  const char *user_id = "test-user";
+  const char *group_id = "test-group";
+  const uint8_t priority = 5;
+  const char *qprogram = "test-qprogram-data";
+  const sqc_rpc_sched_circuit_fmt_t circuit_fmt = SQC_RPC_SCHED_CIRCUIT_FMT_QIR;
+  const size_t shots = 30000;
+  const sqc_rpc_sched_qc_type_t qc_type = SQC_RPC_SCHED_QC_TYPE_RQC_REST;
+  const sqc_rpc_sched_transpiler_t transpiler = SQC_RPC_SCHED_TRANSPILER_NORMAL;
+  const char *remark = "test-remark-data";
+  const char *user_token = "test-user_token-data";
+  const char *result = "test-result-data";
+  dbmgr_job_info_t done_ji_ptr = NULL;
+  dbmgr_job_info_t cancelled_ji_ptr = NULL;
+  dbmgr_job_info_t running_ji_ptr = NULL;
+  dbmgr_job_info_t ji_ptr_arr[3] = { NULL };
+  sqc_rpc_sched_job_status_t actual_status = SQC_RPC_SCHED_JOB_STATUS_UNKNOWN;
+  char *actual_result = NULL;
+  size_t actual_result_len = 0;
+
+  // initialize
+  {
+    rc = s_dbmgr_db_initialize(SQC_RPC_SCHED_UT_DB_FILE);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+    TEST_ASSERT_NOT_NULL(sqc_rpc_sched_db);
+
+    rc = s_dbmgr_job_info_initialize();
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+  }
+
+  // create job
+  {
+    rc = dbmgr_ji_create_job(user_id, group_id, priority,
+                             qprogram, circuit_fmt, shots,
+                             qc_type, transpiler,
+                             remark, user_token, &done_ji_ptr);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+
+    rc = dbmgr_ji_create_job(user_id, group_id, priority,
+                             qprogram, circuit_fmt, shots,
+                             qc_type, transpiler,
+                             remark, user_token, &cancelled_ji_ptr);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+
+    rc = dbmgr_ji_create_job(user_id, group_id, priority,
+                             qprogram, circuit_fmt, shots,
+                             qc_type, transpiler,
+                             remark, user_token, &running_ji_ptr);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+  }
+
+  // set result & change status
+  {
+    rc = dbmgr_ji_set_result(done_ji_ptr, result, strlen(result));
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+    rc = dbmgr_set_job_status_queued(done_ji_ptr);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+    rc = dbmgr_set_job_status_running(done_ji_ptr);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+    rc = dbmgr_set_job_status_done(done_ji_ptr);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+
+    rc = dbmgr_ji_set_result(cancelled_ji_ptr, result, strlen(result));
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+    rc = dbmgr_set_job_status_cancelled(cancelled_ji_ptr);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+
+    rc = dbmgr_ji_set_result(running_ji_ptr, result, strlen(result));
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+    rc = dbmgr_set_job_status_queued(running_ji_ptr);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+    rc = dbmgr_set_job_status_running(running_ji_ptr);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+  }
+
+  // clear job arr result
+  {
+    ji_ptr_arr[0] = done_ji_ptr;
+    ji_ptr_arr[1] = running_ji_ptr;
+    ji_ptr_arr[2] = cancelled_ji_ptr;
+
+    // returns OK even if some jobs could not be cleared
+    rc = dbmgr_ji_clear_job_arr_result(ji_ptr_arr, 3);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+  }
+
+  // done job is cleared
+  {
+    rc = dbmgr_ji_get_status(done_ji_ptr, &actual_status);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+    TEST_ASSERT_EQUAL(SQC_RPC_SCHED_JOB_STATUS_DELETED, actual_status);
+    rc = dbmgr_ji_get_result_len(done_ji_ptr, &actual_result_len);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+    TEST_ASSERT_EQUAL(0, actual_result_len);
+  }
+
+  // cancelled job is cleared
+  {
+    rc = dbmgr_ji_get_status(cancelled_ji_ptr, &actual_status);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+    TEST_ASSERT_EQUAL(SQC_RPC_SCHED_JOB_STATUS_DELETED, actual_status);
+    rc = dbmgr_ji_get_result_len(cancelled_ji_ptr, &actual_result_len);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+    TEST_ASSERT_EQUAL(0, actual_result_len);
+  }
+
+  // running job is not cleared
+  {
+    rc = dbmgr_ji_get_status(running_ji_ptr, &actual_status);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+    TEST_ASSERT_EQUAL(SQC_RPC_SCHED_JOB_STATUS_RUNNING, actual_status);
+
+    rc = dbmgr_ji_get_result(running_ji_ptr, &actual_result);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+    TEST_ASSERT_EQUAL_STRING(result, actual_result);
+    free((void *) actual_result);
+    actual_result = NULL;
+  }
+
+  // delete job
+  {
+    rc = dbmgr_ji_delete_job(done_ji_ptr->job_id);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+    rc = dbmgr_ji_delete_job(cancelled_ji_ptr->job_id);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+    rc = dbmgr_ji_delete_job(running_ji_ptr->job_id);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+  }
+
+  // finalize
+  s_dbmgr_job_info_finalize();
+
+  s_dbmgr_db_finalize();
+  TEST_ASSERT_NULL(sqc_rpc_sched_db);
+}
+
 
 /*
- * Negative testing
+ * Negative test cases for private methods
  */
 
-void test_job_info_record_create_negative(void) {
+void test_negative_s_dbmgr_job_info_record_create(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
   const char *group_id = "test-group";
@@ -2871,9 +3395,15 @@ void test_job_info_record_create_negative(void) {
                                "01234567890123456789012345678901234567890123456789" \
                                "01234567890123456789012345678901234567890123456789" \
                                "0123456";
+  const char *excess_group_id = "01234567890123456789012345678901234567890123456789" \
+                                "01234567890123456789012345678901234567890123456789" \
+                                "01234567890123456789012345678901234567890123456789" \
+                                "01234567890123456789012345678901234567890123456789" \
+                                "01234567890123456789012345678901234567890123456789" \
+                                "0123456";
   dbmgr_job_info_t ji_ptr = NULL;
 
-  // invalid job_id
+  // invalid user_id
   {
     rc = s_dbmgr_job_info_record_create(excess_user_id, group_id, priority,
                                         qprogram, circuit_fmt, shots,
@@ -2897,6 +3427,30 @@ void test_job_info_record_create_negative(void) {
     TEST_ASSERT_NULL(ji_ptr);
   }
 
+  // invalid group_id
+  {
+    rc = s_dbmgr_job_info_record_create(user_id, excess_group_id, priority,
+                                        qprogram, circuit_fmt, shots,
+                                        qc_type, transpiler,
+                                        remark, user_token, &ji_ptr);
+    TEST_ASSERT_EQUAL(SQC_RESULT_TOO_LONG, rc);
+    TEST_ASSERT_NULL(ji_ptr);
+
+    rc = s_dbmgr_job_info_record_create(user_id, "", priority,
+                                        qprogram, circuit_fmt, shots,
+                                        qc_type, transpiler,
+                                        remark, user_token, &ji_ptr);
+    TEST_ASSERT_EQUAL(SQC_RESULT_INVALID_ARGS, rc);
+    TEST_ASSERT_NULL(ji_ptr);
+
+    rc = s_dbmgr_job_info_record_create(user_id, NULL, priority,
+                                        qprogram, circuit_fmt, shots,
+                                        qc_type, transpiler,
+                                        remark, user_token, &ji_ptr);
+    TEST_ASSERT_EQUAL(SQC_RESULT_INVALID_ARGS, rc);
+    TEST_ASSERT_NULL(ji_ptr);
+  }
+
   // invalid record
   {
     rc = s_dbmgr_job_info_record_create(user_id, group_id, priority,
@@ -2907,11 +3461,11 @@ void test_job_info_record_create_negative(void) {
   }
 }
 
-void test_job_info_record_destroy_negative(void) {
+void test_negative_s_dbmgr_job_info_record_destroy(void) {
   s_dbmgr_job_info_record_destroy(NULL);
 }
 
-void test_job_info_record_add_negative(void) {
+void test_negative_s_dbmgr_job_info_record_add(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
   const char *group_id = "test-group";
@@ -2952,7 +3506,7 @@ void test_job_info_record_add_negative(void) {
 
   // invalid record
   {
-    rc = s_dbmgr_job_info_record_delete(NULL);
+    rc = s_dbmgr_job_info_record_add(NULL);
     TEST_ASSERT_EQUAL(SQC_RESULT_INVALID_ARGS, rc);
   }
 
@@ -2969,7 +3523,7 @@ void test_job_info_record_add_negative(void) {
   TEST_ASSERT_NULL(sqc_rpc_sched_db);
 }
 
-void test_job_info_record_delete_negative(void) {
+void test_negative_s_dbmgr_job_info_record_delete(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
   const char *group_id = "test-group";
@@ -3027,7 +3581,7 @@ void test_job_info_record_delete_negative(void) {
   TEST_ASSERT_NULL(sqc_rpc_sched_db);
 }
 
-void test_job_info_record_find_negative(void) {
+void test_negative_s_dbmgr_job_info_record_find(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
   const char *group_id = "test-group";
@@ -3105,7 +3659,11 @@ void test_job_info_record_find_negative(void) {
   TEST_ASSERT_NULL(sqc_rpc_sched_db);
 }
 
-void test_ji_create_job_negative(void) {
+/*
+ * Negative test cases for public methods
+ */
+
+void test_negative_dbmgr_ji_create_job(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
   const char *group_id = "test-group";
@@ -3129,6 +3687,23 @@ void test_ji_create_job_negative(void) {
     TEST_ASSERT_NULL(ji_ptr);
 
     rc = dbmgr_ji_create_job(NULL, group_id, priority,
+                             qprogram, circuit_fmt, shots,
+                             qc_type, transpiler,
+                             remark, user_token, &ji_ptr);
+    TEST_ASSERT_EQUAL(SQC_RESULT_INVALID_ARGS, rc);
+    TEST_ASSERT_NULL(ji_ptr);
+  }
+
+  // invalid group_id
+  {
+    rc = dbmgr_ji_create_job(user_id, "", priority,
+                             qprogram, circuit_fmt, shots,
+                             qc_type, transpiler,
+                             remark, user_token, &ji_ptr);
+    TEST_ASSERT_EQUAL(SQC_RESULT_INVALID_ARGS, rc);
+    TEST_ASSERT_NULL(ji_ptr);
+
+    rc = dbmgr_ji_create_job(user_id, NULL, priority,
                              qprogram, circuit_fmt, shots,
                              qc_type, transpiler,
                              remark, user_token, &ji_ptr);
@@ -3190,7 +3765,7 @@ void test_ji_create_job_negative(void) {
   }
 }
 
-void test_ji_delete_job_negative(void) {
+void test_negative_dbmgr_ji_delete_job(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *job_id = "test-job";
 
@@ -3226,7 +3801,7 @@ void test_ji_delete_job_negative(void) {
   TEST_ASSERT_NULL(sqc_rpc_sched_db);
 }
 
-void test_ji_job_exists_negative(void) {
+void test_negative_dbmgr_ji_job_exists(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *job_id = "test-job";
 
@@ -3259,11 +3834,264 @@ void test_ji_job_exists_negative(void) {
   TEST_ASSERT_NULL(sqc_rpc_sched_db);
 }
 
-void test_ji_job_find_negative(void) {
-  // same as test_job_info_record_find_negative test
+void test_negative_dbmgr_ji_job_find(void) {
+  sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
+  const char *user_id = "test-user";
+  const char *group_id = "test-group";
+  const uint8_t priority = 5;
+  const char *qprogram = "test-qprogram-data";
+  const sqc_rpc_sched_circuit_fmt_t circuit_fmt = SQC_RPC_SCHED_CIRCUIT_FMT_QIR;
+  const size_t shots = 30000;
+  const sqc_rpc_sched_qc_type_t qc_type = SQC_RPC_SCHED_QC_TYPE_RQC_REST;
+  const sqc_rpc_sched_transpiler_t transpiler = SQC_RPC_SCHED_TRANSPILER_NORMAL;
+  const char *remark = "test-remark-data";
+  const char *user_token = "test-user_token-data";
+  dbmgr_job_info_t ji_ptr = NULL;
+  dbmgr_job_info_t actual_ji_ptr = NULL;
+
+  // create record
+  {
+    rc = s_dbmgr_job_info_record_create(user_id, group_id, priority,
+                                        qprogram, circuit_fmt, shots,
+                                        qc_type, transpiler,
+                                        remark, user_token, &ji_ptr);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+  }
+
+  // not started
+  {
+    rc = dbmgr_ji_job_find(ji_ptr->job_id, &actual_ji_ptr);
+    TEST_ASSERT_EQUAL(SQC_RESULT_NOT_STARTED, rc);
+    TEST_ASSERT_NULL(actual_ji_ptr);
+  }
+
+  // initialize
+  {
+    rc = s_dbmgr_db_initialize(SQC_RPC_SCHED_UT_DB_FILE);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+    TEST_ASSERT_NOT_NULL(sqc_rpc_sched_db);
+
+    rc = s_dbmgr_job_info_initialize();
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+  }
+
+  // non-existent job_id
+  {
+    rc = dbmgr_ji_job_find("non-existent-job", &actual_ji_ptr);
+    TEST_ASSERT_EQUAL(SQC_RESULT_NOT_FOUND, rc);
+    TEST_ASSERT_NULL(actual_ji_ptr);
+  }
+
+  // invalid job_id
+  {
+    rc = dbmgr_ji_job_find("", &actual_ji_ptr);
+    TEST_ASSERT_EQUAL(SQC_RESULT_INVALID_ARGS, rc);
+    TEST_ASSERT_NULL(actual_ji_ptr);
+
+    rc = dbmgr_ji_job_find(NULL, &actual_ji_ptr);
+    TEST_ASSERT_EQUAL(SQC_RESULT_INVALID_ARGS, rc);
+    TEST_ASSERT_NULL(actual_ji_ptr);
+  }
+
+  // invalid record
+  {
+    rc = dbmgr_ji_job_find(ji_ptr->job_id, NULL);
+    TEST_ASSERT_EQUAL(SQC_RESULT_INVALID_ARGS, rc);
+  }
+
+  // destroy record
+  {
+    s_dbmgr_job_info_record_destroy(ji_ptr);
+    ji_ptr = NULL;
+  }
+
+  // finalize
+  s_dbmgr_job_info_finalize();
+
+  s_dbmgr_db_finalize();
+  TEST_ASSERT_NULL(sqc_rpc_sched_db);
 }
 
-void test_ji_get_job_id_negative(void) {
+void test_negative_dbmgr_ji_job_find_by_user_id(void) {
+  sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
+  const char *user_id = "test-user";
+  dbmgr_job_info_t sentinel = NULL;
+  dbmgr_job_info_t *actual_ji_ptr_arr = NULL;
+  size_t actual_arr_len = 0;
+
+  // initialize
+  {
+    rc = s_dbmgr_db_initialize(SQC_RPC_SCHED_UT_DB_FILE);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+    TEST_ASSERT_NOT_NULL(sqc_rpc_sched_db);
+
+    rc = s_dbmgr_job_info_initialize();
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+  }
+
+  // invalid output arguments
+  {
+    rc = dbmgr_ji_job_find_by_user_id(user_id, NULL, &actual_arr_len);
+    TEST_ASSERT_EQUAL(SQC_RESULT_INVALID_ARGS, rc);
+
+    rc = dbmgr_ji_job_find_by_user_id(user_id, &actual_ji_ptr_arr, NULL);
+    TEST_ASSERT_EQUAL(SQC_RESULT_INVALID_ARGS, rc);
+    TEST_ASSERT_NULL(actual_ji_ptr_arr);
+  }
+
+  // no jobs: output array must be reset to NULL
+  {
+    actual_ji_ptr_arr = &sentinel;
+    actual_arr_len = 1;
+    rc = dbmgr_ji_job_find_by_user_id(user_id, &actual_ji_ptr_arr, &actual_arr_len);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+    TEST_ASSERT_NULL(actual_ji_ptr_arr);
+    TEST_ASSERT_EQUAL(0, actual_arr_len);
+  }
+
+  // finalize
+  s_dbmgr_job_info_finalize();
+
+  s_dbmgr_db_finalize();
+  TEST_ASSERT_NULL(sqc_rpc_sched_db);
+}
+
+void test_negative_dbmgr_ji_job_find_by_job_status(void) {
+  sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
+  const sqc_rpc_sched_job_status_t target_status = SQC_RPC_SCHED_JOB_STATUS_QUEUED;
+  dbmgr_job_info_t sentinel = NULL;
+  dbmgr_job_info_t *actual_ji_ptr_arr = NULL;
+  size_t actual_arr_len = 0;
+
+  // initialize
+  {
+    rc = s_dbmgr_db_initialize(SQC_RPC_SCHED_UT_DB_FILE);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+    TEST_ASSERT_NOT_NULL(sqc_rpc_sched_db);
+
+    rc = s_dbmgr_job_info_initialize();
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+  }
+
+  // invalid output arguments
+  {
+    rc = dbmgr_ji_job_find_by_job_status(target_status, NULL, &actual_arr_len);
+    TEST_ASSERT_EQUAL(SQC_RESULT_INVALID_ARGS, rc);
+
+    rc = dbmgr_ji_job_find_by_job_status(target_status, &actual_ji_ptr_arr, NULL);
+    TEST_ASSERT_EQUAL(SQC_RESULT_INVALID_ARGS, rc);
+    TEST_ASSERT_NULL(actual_ji_ptr_arr);
+  }
+
+  // no jobs: output array must be reset to NULL
+  {
+    actual_ji_ptr_arr = &sentinel;
+    actual_arr_len = 1;
+    rc = dbmgr_ji_job_find_by_job_status(target_status, &actual_ji_ptr_arr, &actual_arr_len);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+    TEST_ASSERT_NULL(actual_ji_ptr_arr);
+    TEST_ASSERT_EQUAL(0, actual_arr_len);
+  }
+
+  // finalize
+  s_dbmgr_job_info_finalize();
+
+  s_dbmgr_db_finalize();
+  TEST_ASSERT_NULL(sqc_rpc_sched_db);
+}
+
+void test_negative_dbmgr_ji_job_find_by_created_time(void) {
+  sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
+  const sqc_chrono_t target_from_time = 0;
+  const sqc_chrono_t target_to_time = sqc_chrono_now();
+  dbmgr_job_info_t sentinel = NULL;
+  dbmgr_job_info_t *actual_ji_ptr_arr = NULL;
+  size_t actual_arr_len = 0;
+
+  // initialize
+  {
+    rc = s_dbmgr_db_initialize(SQC_RPC_SCHED_UT_DB_FILE);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+    TEST_ASSERT_NOT_NULL(sqc_rpc_sched_db);
+
+    rc = s_dbmgr_job_info_initialize();
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+  }
+
+  // invalid output arguments
+  {
+    rc = dbmgr_ji_job_find_by_created_time(target_from_time, target_to_time, NULL, &actual_arr_len);
+    TEST_ASSERT_EQUAL(SQC_RESULT_INVALID_ARGS, rc);
+
+    rc = dbmgr_ji_job_find_by_created_time(target_from_time, target_to_time, &actual_ji_ptr_arr, NULL);
+    TEST_ASSERT_EQUAL(SQC_RESULT_INVALID_ARGS, rc);
+    TEST_ASSERT_NULL(actual_ji_ptr_arr);
+  }
+
+  // no jobs: output array must be reset to NULL
+  {
+    actual_ji_ptr_arr = &sentinel;
+    actual_arr_len = 1;
+    rc = dbmgr_ji_job_find_by_created_time(target_from_time, target_to_time, &actual_ji_ptr_arr, &actual_arr_len);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+    TEST_ASSERT_NULL(actual_ji_ptr_arr);
+    TEST_ASSERT_EQUAL(0, actual_arr_len);
+  }
+
+  // finalize
+  s_dbmgr_job_info_finalize();
+
+  s_dbmgr_db_finalize();
+  TEST_ASSERT_NULL(sqc_rpc_sched_db);
+}
+
+void test_negative_dbmgr_ji_job_find_by_delete_target(void) {
+  sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
+  const char *user_id = "test-user";
+  const sqc_chrono_t target_from_time = 0;
+  const sqc_chrono_t target_to_time = sqc_chrono_now();
+  dbmgr_job_info_t sentinel = NULL;
+  dbmgr_job_info_t *actual_ji_ptr_arr = NULL;
+  size_t actual_arr_len = 0;
+
+  // initialize
+  {
+    rc = s_dbmgr_db_initialize(SQC_RPC_SCHED_UT_DB_FILE);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+    TEST_ASSERT_NOT_NULL(sqc_rpc_sched_db);
+
+    rc = s_dbmgr_job_info_initialize();
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+  }
+
+  // invalid output arguments
+  {
+    rc = dbmgr_ji_job_find_by_delete_target(user_id, target_from_time, target_to_time, NULL, &actual_arr_len);
+    TEST_ASSERT_EQUAL(SQC_RESULT_INVALID_ARGS, rc);
+
+    rc = dbmgr_ji_job_find_by_delete_target(user_id, target_from_time, target_to_time, &actual_ji_ptr_arr, NULL);
+    TEST_ASSERT_EQUAL(SQC_RESULT_INVALID_ARGS, rc);
+    TEST_ASSERT_NULL(actual_ji_ptr_arr);
+  }
+
+  // no jobs: output array must be reset to NULL
+  {
+    actual_ji_ptr_arr = &sentinel;
+    actual_arr_len = 1;
+    rc = dbmgr_ji_job_find_by_delete_target(user_id, target_from_time, target_to_time, &actual_ji_ptr_arr, &actual_arr_len);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+    TEST_ASSERT_NULL(actual_ji_ptr_arr);
+    TEST_ASSERT_EQUAL(0, actual_arr_len);
+  }
+
+  // finalize
+  s_dbmgr_job_info_finalize();
+
+  s_dbmgr_db_finalize();
+  TEST_ASSERT_NULL(sqc_rpc_sched_db);
+}
+
+void test_negative_dbmgr_ji_get_job_id(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
   const char *group_id = "test-group";
@@ -3306,7 +4134,7 @@ void test_ji_get_job_id_negative(void) {
   }
 }
 
-void test_ji_get_job_id_len_negative(void) {
+void test_negative_dbmgr_ji_get_job_id_len(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
   const char *group_id = "test-group";
@@ -3349,7 +4177,7 @@ void test_ji_get_job_id_len_negative(void) {
   }
 }
 
-void test_ji_get_user_id_negative(void) {
+void test_negative_dbmgr_ji_get_user_id(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
   const char *group_id = "test-group";
@@ -3392,7 +4220,7 @@ void test_ji_get_user_id_negative(void) {
   }
 }
 
-void test_ji_get_user_id_len_negative(void) {
+void test_negative_dbmgr_ji_get_user_id_len(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
   const char *group_id = "test-group";
@@ -3435,7 +4263,93 @@ void test_ji_get_user_id_len_negative(void) {
   }
 }
 
-void test_ji_get_priority_negative(void) {
+void test_negative_dbmgr_ji_get_group_id(void) {
+  sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
+  const char *user_id = "test-user";
+  const char *group_id = "test-group";
+  const uint8_t priority = 5;
+  const char *qprogram = "test-qprogram-data";
+  const sqc_rpc_sched_circuit_fmt_t circuit_fmt = SQC_RPC_SCHED_CIRCUIT_FMT_QIR;
+  const size_t shots = 30000;
+  const sqc_rpc_sched_qc_type_t qc_type = SQC_RPC_SCHED_QC_TYPE_RQC_REST;
+  const sqc_rpc_sched_transpiler_t transpiler = SQC_RPC_SCHED_TRANSPILER_NORMAL;
+  const char *remark = "test-remark-data";
+  const char *user_token = "test-user_token-data";
+  dbmgr_job_info_t ji_ptr = NULL;
+  char *actual_group_id = NULL;
+
+  // create record
+  {
+    rc = s_dbmgr_job_info_record_create(user_id, group_id, priority,
+                                        qprogram, circuit_fmt, shots,
+                                        qc_type, transpiler,
+                                        remark, user_token, &ji_ptr);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+  }
+
+  // invalid record
+  {
+    rc = dbmgr_ji_get_group_id(NULL, &actual_group_id);
+    TEST_ASSERT_EQUAL(SQC_RESULT_INVALID_ARGS, rc);
+  }
+
+  // invalid group_id
+  {
+    rc = dbmgr_ji_get_group_id(ji_ptr, NULL);
+    TEST_ASSERT_EQUAL(SQC_RESULT_INVALID_ARGS, rc);
+  }
+
+  // destroy record
+  {
+    s_dbmgr_job_info_record_destroy(ji_ptr);
+    ji_ptr = NULL;
+  }
+}
+
+void test_negative_dbmgr_ji_get_group_id_len(void) {
+  sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
+  const char *user_id = "test-user";
+  const char *group_id = "test-group";
+  const uint8_t priority = 5;
+  const char *qprogram = "test-qprogram-data";
+  const sqc_rpc_sched_circuit_fmt_t circuit_fmt = SQC_RPC_SCHED_CIRCUIT_FMT_QIR;
+  const size_t shots = 30000;
+  const sqc_rpc_sched_qc_type_t qc_type = SQC_RPC_SCHED_QC_TYPE_RQC_REST;
+  const sqc_rpc_sched_transpiler_t transpiler = SQC_RPC_SCHED_TRANSPILER_NORMAL;
+  const char *remark = "test-remark-data";
+  const char *user_token = "test-user_token-data";
+  dbmgr_job_info_t ji_ptr = NULL;
+  size_t actual_group_id_len = 0;
+
+  // create record
+  {
+    rc = s_dbmgr_job_info_record_create(user_id, group_id, priority,
+                                        qprogram, circuit_fmt, shots,
+                                        qc_type, transpiler,
+                                        remark, user_token, &ji_ptr);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+  }
+
+  // invalid record
+  {
+    rc = dbmgr_ji_get_group_id_len(NULL, &actual_group_id_len);
+    TEST_ASSERT_EQUAL(SQC_RESULT_INVALID_ARGS, rc);
+  }
+
+  // invalid group_id_len
+  {
+    rc = dbmgr_ji_get_group_id_len(ji_ptr, NULL);
+    TEST_ASSERT_EQUAL(SQC_RESULT_INVALID_ARGS, rc);
+  }
+
+  // destroy record
+  {
+    s_dbmgr_job_info_record_destroy(ji_ptr);
+    ji_ptr = NULL;
+  }
+}
+
+void test_negative_dbmgr_ji_get_priority(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
   const char *group_id = "test-group";
@@ -3465,7 +4379,7 @@ void test_ji_get_priority_negative(void) {
     TEST_ASSERT_EQUAL(SQC_RESULT_INVALID_ARGS, rc);
   }
 
-  // invalid user_id_len
+  // invalid priority
   {
     rc = dbmgr_ji_get_priority(ji_ptr, NULL);
     TEST_ASSERT_EQUAL(SQC_RESULT_INVALID_ARGS, rc);
@@ -3478,7 +4392,305 @@ void test_ji_get_priority_negative(void) {
   }
 }
 
-void test_ji_set_qc_job_id_negative(void) {
+void test_negative_dbmgr_set_job_status_queued(void) {
+  sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
+  const char *user_id = "test-user";
+  const char *group_id = "test-group";
+  const uint8_t priority = 5;
+  const char *qprogram = "test-qprogram-data";
+  const sqc_rpc_sched_circuit_fmt_t circuit_fmt = SQC_RPC_SCHED_CIRCUIT_FMT_QIR;
+  const size_t shots = 30000;
+  const sqc_rpc_sched_qc_type_t qc_type = SQC_RPC_SCHED_QC_TYPE_RQC_REST;
+  const sqc_rpc_sched_transpiler_t transpiler = SQC_RPC_SCHED_TRANSPILER_NORMAL;
+  const char *remark = "test-remark-data";
+  const char *user_token = "test-user_token-data";
+  dbmgr_job_info_t ji_ptr = NULL;
+  const sqc_rpc_sched_job_status_t invalid_from_status[] = {
+    SQC_RPC_SCHED_JOB_STATUS_QUEUED,
+    SQC_RPC_SCHED_JOB_STATUS_RUNNING,
+    SQC_RPC_SCHED_JOB_STATUS_DONE,
+    SQC_RPC_SCHED_JOB_STATUS_CANCELLED,
+    SQC_RPC_SCHED_JOB_STATUS_ERROR,
+    SQC_RPC_SCHED_JOB_STATUS_DELETED
+  };
+  const size_t invalid_from_status_len = sizeof(invalid_from_status) / sizeof(invalid_from_status[0]);
+
+  // create record
+  {
+    rc = s_dbmgr_job_info_record_create(user_id, group_id, priority,
+                                        qprogram, circuit_fmt, shots,
+                                        qc_type, transpiler,
+                                        remark, user_token, &ji_ptr);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+  }
+
+  // invalid state transition (-> queued)
+  {
+    for (size_t i = 0; i < invalid_from_status_len; i++) {
+      ji_ptr->status = invalid_from_status[i];
+
+      rc = dbmgr_set_job_status_queued(ji_ptr);
+      TEST_ASSERT_EQUAL(SQC_RESULT_INVALID_STATE_TRANSITION, rc);
+      TEST_ASSERT_EQUAL(invalid_from_status[i], ji_ptr->status);
+      TEST_ASSERT_EQUAL_INT64(0, ji_ptr->queued_time);
+    }
+  }
+
+  // destroy record
+  {
+    s_dbmgr_job_info_record_destroy(ji_ptr);
+    ji_ptr = NULL;
+  }
+}
+
+void test_negative_dbmgr_set_job_status_running(void) {
+  sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
+  const char *user_id = "test-user";
+  const char *group_id = "test-group";
+  const uint8_t priority = 5;
+  const char *qprogram = "test-qprogram-data";
+  const sqc_rpc_sched_circuit_fmt_t circuit_fmt = SQC_RPC_SCHED_CIRCUIT_FMT_QIR;
+  const size_t shots = 30000;
+  const sqc_rpc_sched_qc_type_t qc_type = SQC_RPC_SCHED_QC_TYPE_RQC_REST;
+  const sqc_rpc_sched_transpiler_t transpiler = SQC_RPC_SCHED_TRANSPILER_NORMAL;
+  const char *remark = "test-remark-data";
+  const char *user_token = "test-user_token-data";
+  dbmgr_job_info_t ji_ptr = NULL;
+  const sqc_rpc_sched_job_status_t invalid_from_status[] = {
+    SQC_RPC_SCHED_JOB_STATUS_CREATED,
+    SQC_RPC_SCHED_JOB_STATUS_RUNNING,
+    SQC_RPC_SCHED_JOB_STATUS_DONE,
+    SQC_RPC_SCHED_JOB_STATUS_CANCELLED,
+    SQC_RPC_SCHED_JOB_STATUS_ERROR,
+    SQC_RPC_SCHED_JOB_STATUS_DELETED
+  };
+  const size_t invalid_from_status_len = sizeof(invalid_from_status) / sizeof(invalid_from_status[0]);
+
+  // create record
+  {
+    rc = s_dbmgr_job_info_record_create(user_id, group_id, priority,
+                                        qprogram, circuit_fmt, shots,
+                                        qc_type, transpiler,
+                                        remark, user_token, &ji_ptr);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+  }
+
+  // invalid state transition (-> running)
+  {
+    for (size_t i = 0; i < invalid_from_status_len; i++) {
+      ji_ptr->status = invalid_from_status[i];
+
+      rc = dbmgr_set_job_status_running(ji_ptr);
+      TEST_ASSERT_EQUAL(SQC_RESULT_INVALID_STATE_TRANSITION, rc);
+      TEST_ASSERT_EQUAL(invalid_from_status[i], ji_ptr->status);
+      TEST_ASSERT_EQUAL_INT64(0, ji_ptr->running_time);
+    }
+  }
+
+  // destroy record
+  {
+    s_dbmgr_job_info_record_destroy(ji_ptr);
+    ji_ptr = NULL;
+  }
+}
+
+void test_negative_dbmgr_set_job_status_done(void) {
+  sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
+  const char *user_id = "test-user";
+  const char *group_id = "test-group";
+  const uint8_t priority = 5;
+  const char *qprogram = "test-qprogram-data";
+  const sqc_rpc_sched_circuit_fmt_t circuit_fmt = SQC_RPC_SCHED_CIRCUIT_FMT_QIR;
+  const size_t shots = 30000;
+  const sqc_rpc_sched_qc_type_t qc_type = SQC_RPC_SCHED_QC_TYPE_RQC_REST;
+  const sqc_rpc_sched_transpiler_t transpiler = SQC_RPC_SCHED_TRANSPILER_NORMAL;
+  const char *remark = "test-remark-data";
+  const char *user_token = "test-user_token-data";
+  dbmgr_job_info_t ji_ptr = NULL;
+  const sqc_rpc_sched_job_status_t invalid_from_status[] = {
+    SQC_RPC_SCHED_JOB_STATUS_CREATED,
+    SQC_RPC_SCHED_JOB_STATUS_QUEUED,
+    SQC_RPC_SCHED_JOB_STATUS_DONE,
+    SQC_RPC_SCHED_JOB_STATUS_CANCELLED,
+    SQC_RPC_SCHED_JOB_STATUS_ERROR,
+    SQC_RPC_SCHED_JOB_STATUS_DELETED
+  };
+  const size_t invalid_from_status_len = sizeof(invalid_from_status) / sizeof(invalid_from_status[0]);
+
+  // create record
+  {
+    rc = s_dbmgr_job_info_record_create(user_id, group_id, priority,
+                                        qprogram, circuit_fmt, shots,
+                                        qc_type, transpiler,
+                                        remark, user_token, &ji_ptr);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+  }
+
+  // invalid state transition (-> done)
+  {
+    for (size_t i = 0; i < invalid_from_status_len; i++) {
+      ji_ptr->status = invalid_from_status[i];
+
+      rc = dbmgr_set_job_status_done(ji_ptr);
+      TEST_ASSERT_EQUAL(SQC_RESULT_INVALID_STATE_TRANSITION, rc);
+      TEST_ASSERT_EQUAL(invalid_from_status[i], ji_ptr->status);
+      TEST_ASSERT_EQUAL_INT64(0, ji_ptr->done_time);
+    }
+  }
+
+  // destroy record
+  {
+    s_dbmgr_job_info_record_destroy(ji_ptr);
+    ji_ptr = NULL;
+  }
+}
+
+void test_negative_dbmgr_set_job_status_cancelled(void) {
+  sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
+  const char *user_id = "test-user";
+  const char *group_id = "test-group";
+  const uint8_t priority = 5;
+  const char *qprogram = "test-qprogram-data";
+  const sqc_rpc_sched_circuit_fmt_t circuit_fmt = SQC_RPC_SCHED_CIRCUIT_FMT_QIR;
+  const size_t shots = 30000;
+  const sqc_rpc_sched_qc_type_t qc_type = SQC_RPC_SCHED_QC_TYPE_RQC_REST;
+  const sqc_rpc_sched_transpiler_t transpiler = SQC_RPC_SCHED_TRANSPILER_NORMAL;
+  const char *remark = "test-remark-data";
+  const char *user_token = "test-user_token-data";
+  dbmgr_job_info_t ji_ptr = NULL;
+  const sqc_rpc_sched_job_status_t invalid_from_status[] = {
+    SQC_RPC_SCHED_JOB_STATUS_CANCELLED,
+    SQC_RPC_SCHED_JOB_STATUS_DONE,
+    SQC_RPC_SCHED_JOB_STATUS_ERROR,
+    SQC_RPC_SCHED_JOB_STATUS_DELETED
+  };
+  const size_t invalid_from_status_len = sizeof(invalid_from_status) / sizeof(invalid_from_status[0]);
+
+  // create record
+  {
+    rc = s_dbmgr_job_info_record_create(user_id, group_id, priority,
+                                        qprogram, circuit_fmt, shots,
+                                        qc_type, transpiler,
+                                        remark, user_token, &ji_ptr);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+  }
+
+  // invalid state transition (-> cancelled)
+  {
+    for (size_t i = 0; i < invalid_from_status_len; i++) {
+      ji_ptr->status = invalid_from_status[i];
+
+      rc = dbmgr_set_job_status_cancelled(ji_ptr);
+      TEST_ASSERT_EQUAL(SQC_RESULT_INVALID_STATE_TRANSITION, rc);
+      TEST_ASSERT_EQUAL(invalid_from_status[i], ji_ptr->status);
+      TEST_ASSERT_EQUAL_INT64(0, ji_ptr->cancelled_time);
+    }
+  }
+
+  // destroy record
+  {
+    s_dbmgr_job_info_record_destroy(ji_ptr);
+    ji_ptr = NULL;
+  }
+}
+
+void test_negative_dbmgr_set_job_status_error(void) {
+  sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
+  const char *user_id = "test-user";
+  const char *group_id = "test-group";
+  const uint8_t priority = 5;
+  const char *qprogram = "test-qprogram-data";
+  const sqc_rpc_sched_circuit_fmt_t circuit_fmt = SQC_RPC_SCHED_CIRCUIT_FMT_QIR;
+  const size_t shots = 30000;
+  const sqc_rpc_sched_qc_type_t qc_type = SQC_RPC_SCHED_QC_TYPE_RQC_REST;
+  const sqc_rpc_sched_transpiler_t transpiler = SQC_RPC_SCHED_TRANSPILER_NORMAL;
+  const char *remark = "test-remark-data";
+  const char *user_token = "test-user_token-data";
+  dbmgr_job_info_t ji_ptr = NULL;
+  const sqc_rpc_sched_job_status_t invalid_from_status[] = {
+    SQC_RPC_SCHED_JOB_STATUS_ERROR,
+    SQC_RPC_SCHED_JOB_STATUS_DONE,
+    SQC_RPC_SCHED_JOB_STATUS_CANCELLED,
+    SQC_RPC_SCHED_JOB_STATUS_DELETED
+  };
+  const size_t invalid_from_status_len = sizeof(invalid_from_status) / sizeof(invalid_from_status[0]);
+
+  // create record
+  {
+    rc = s_dbmgr_job_info_record_create(user_id, group_id, priority,
+                                        qprogram, circuit_fmt, shots,
+                                        qc_type, transpiler,
+                                        remark, user_token, &ji_ptr);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+  }
+
+  // invalid state transition (-> error)
+  {
+    for (size_t i = 0; i < invalid_from_status_len; i++) {
+      ji_ptr->status = invalid_from_status[i];
+
+      rc = dbmgr_set_job_status_error(ji_ptr);
+      TEST_ASSERT_EQUAL(SQC_RESULT_INVALID_STATE_TRANSITION, rc);
+      TEST_ASSERT_EQUAL(invalid_from_status[i], ji_ptr->status);
+      TEST_ASSERT_EQUAL_INT64(0, ji_ptr->error_time);
+    }
+  }
+
+  // destroy record
+  {
+    s_dbmgr_job_info_record_destroy(ji_ptr);
+    ji_ptr = NULL;
+  }
+}
+
+void test_negative_dbmgr_set_job_status_deleted(void) {
+  sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
+  const char *user_id = "test-user";
+  const char *group_id = "test-group";
+  const uint8_t priority = 5;
+  const char *qprogram = "test-qprogram-data";
+  const sqc_rpc_sched_circuit_fmt_t circuit_fmt = SQC_RPC_SCHED_CIRCUIT_FMT_QIR;
+  const size_t shots = 30000;
+  const sqc_rpc_sched_qc_type_t qc_type = SQC_RPC_SCHED_QC_TYPE_RQC_REST;
+  const sqc_rpc_sched_transpiler_t transpiler = SQC_RPC_SCHED_TRANSPILER_NORMAL;
+  const char *remark = "test-remark-data";
+  const char *user_token = "test-user_token-data";
+  dbmgr_job_info_t ji_ptr = NULL;
+  const sqc_rpc_sched_job_status_t invalid_from_status[] = {
+    SQC_RPC_SCHED_JOB_STATUS_RUNNING,
+    SQC_RPC_SCHED_JOB_STATUS_DELETED
+  };
+  const size_t invalid_from_status_len = sizeof(invalid_from_status) / sizeof(invalid_from_status[0]);
+
+  // create record
+  {
+    rc = s_dbmgr_job_info_record_create(user_id, group_id, priority,
+                                        qprogram, circuit_fmt, shots,
+                                        qc_type, transpiler,
+                                        remark, user_token, &ji_ptr);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+  }
+
+  // invalid state transition (-> deleted)
+  {
+    for (size_t i = 0; i < invalid_from_status_len; i++) {
+      ji_ptr->status = invalid_from_status[i];
+
+      rc = dbmgr_set_job_status_deleted(ji_ptr);
+      TEST_ASSERT_EQUAL(SQC_RESULT_INVALID_STATE_TRANSITION, rc);
+      TEST_ASSERT_EQUAL(invalid_from_status[i], ji_ptr->status);
+      TEST_ASSERT_EQUAL_INT64(0, ji_ptr->deleted_time);
+    }
+  }
+
+  // destroy record
+  {
+    s_dbmgr_job_info_record_destroy(ji_ptr);
+    ji_ptr = NULL;
+  }
+}
+
+void test_negative_dbmgr_ji_set_qc_job_id(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
   const char *group_id = "test-group";
@@ -3526,7 +4738,7 @@ void test_ji_set_qc_job_id_negative(void) {
   }
 }
 
-void test_ji_get_qc_job_id_negative(void) {
+void test_negative_dbmgr_ji_get_qc_job_id(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
   const char *group_id = "test-group";
@@ -3569,7 +4781,7 @@ void test_ji_get_qc_job_id_negative(void) {
   }
 }
 
-void test_ji_get_qc_job_id_len_negative(void) {
+void test_negative_dbmgr_ji_get_qc_job_id_len(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
   const char *group_id = "test-group";
@@ -3612,7 +4824,7 @@ void test_ji_get_qc_job_id_len_negative(void) {
   }
 }
 
-void test_ji_get_qprogram_negative(void) {
+void test_negative_dbmgr_ji_get_qprogram(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
   const char *group_id = "test-group";
@@ -3655,7 +4867,7 @@ void test_ji_get_qprogram_negative(void) {
   }
 }
 
-void test_ji_get_qprogram_len_negative(void) {
+void test_negative_dbmgr_ji_get_qprogram_len(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
   const char *group_id = "test-group";
@@ -3698,7 +4910,50 @@ void test_ji_get_qprogram_len_negative(void) {
   }
 }
 
-void test_ji_get_shots_negative(void) {
+void test_negative_dbmgr_ji_get_circuit_fmt(void) {
+  sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
+  const char *user_id = "test-user";
+  const char *group_id = "test-group";
+  const uint8_t priority = 5;
+  const char *qprogram = "test-qprogram-data";
+  const sqc_rpc_sched_circuit_fmt_t circuit_fmt = SQC_RPC_SCHED_CIRCUIT_FMT_QIR;
+  const size_t shots = 30000;
+  const sqc_rpc_sched_qc_type_t qc_type = SQC_RPC_SCHED_QC_TYPE_RQC_REST;
+  const sqc_rpc_sched_transpiler_t transpiler = SQC_RPC_SCHED_TRANSPILER_NORMAL;
+  const char *remark = "test-remark-data";
+  const char *user_token = "test-user_token-data";
+  dbmgr_job_info_t ji_ptr = NULL;
+  sqc_rpc_sched_circuit_fmt_t actual_circuit_fmt = SQC_RPC_SCHED_CIRCUIT_FMT_UNKNOWN;
+
+  // create record
+  {
+    rc = s_dbmgr_job_info_record_create(user_id, group_id, priority,
+                                        qprogram, circuit_fmt, shots,
+                                        qc_type, transpiler,
+                                        remark, user_token, &ji_ptr);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+  }
+
+  // invalid record
+  {
+    rc = dbmgr_ji_get_circuit_fmt(NULL, &actual_circuit_fmt);
+    TEST_ASSERT_EQUAL(SQC_RESULT_INVALID_ARGS, rc);
+  }
+
+  // invalid circuit_fmt
+  {
+    rc = dbmgr_ji_get_circuit_fmt(ji_ptr, NULL);
+    TEST_ASSERT_EQUAL(SQC_RESULT_INVALID_ARGS, rc);
+  }
+
+  // destroy record
+  {
+    s_dbmgr_job_info_record_destroy(ji_ptr);
+    ji_ptr = NULL;
+  }
+}
+
+void test_negative_dbmgr_ji_get_shots(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
   const char *group_id = "test-group";
@@ -3741,7 +4996,7 @@ void test_ji_get_shots_negative(void) {
   }
 }
 
-void test_ji_get_qc_type_negative(void) {
+void test_negative_dbmgr_ji_get_qc_type(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
   const char *group_id = "test-group";
@@ -3784,7 +5039,7 @@ void test_ji_get_qc_type_negative(void) {
   }
 }
 
-void test_ji_get_transpiler_negative(void) {
+void test_negative_dbmgr_ji_get_transpiler(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
   const char *group_id = "test-group";
@@ -3814,7 +5069,7 @@ void test_ji_get_transpiler_negative(void) {
     TEST_ASSERT_EQUAL(SQC_RESULT_INVALID_ARGS, rc);
   }
 
-  // invalid qc_type
+  // invalid transpiler
   {
     rc = dbmgr_ji_get_transpiler(ji_ptr, NULL);
     TEST_ASSERT_EQUAL(SQC_RESULT_INVALID_ARGS, rc);
@@ -3827,7 +5082,7 @@ void test_ji_get_transpiler_negative(void) {
   }
 }
 
-void test_ji_get_remark_negative(void) {
+void test_negative_dbmgr_ji_get_remark(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
   const char *group_id = "test-group";
@@ -3870,7 +5125,7 @@ void test_ji_get_remark_negative(void) {
   }
 }
 
-void test_ji_get_remark_len_negative(void) {
+void test_negative_dbmgr_ji_get_remark_len(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
   const char *group_id = "test-group";
@@ -3913,7 +5168,7 @@ void test_ji_get_remark_len_negative(void) {
   }
 }
 
-void test_ji_set_result_negative(void) {
+void test_negative_dbmgr_ji_set_result(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
   const char *group_id = "test-group";
@@ -3962,7 +5217,7 @@ void test_ji_set_result_negative(void) {
   }
 }
 
-void test_ji_get_result_negative(void) {
+void test_negative_dbmgr_ji_get_result(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
   const char *group_id = "test-group";
@@ -4005,7 +5260,7 @@ void test_ji_get_result_negative(void) {
   }
 }
 
-void test_ji_get_result_len_negative(void) {
+void test_negative_dbmgr_ji_get_result_len(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
   const char *group_id = "test-group";
@@ -4029,7 +5284,7 @@ void test_ji_get_result_len_negative(void) {
     TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
   }
 
-  // invalid result
+  // invalid record
   {
     rc = dbmgr_ji_get_result_len(NULL, &actual_result_len);
     TEST_ASSERT_EQUAL(SQC_RESULT_INVALID_ARGS, rc);
@@ -4048,7 +5303,7 @@ void test_ji_get_result_len_negative(void) {
   }
 }
 
-void test_ji_get_user_token_negative(void) {
+void test_negative_dbmgr_ji_get_user_token(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
   const char *group_id = "test-group";
@@ -4091,7 +5346,7 @@ void test_ji_get_user_token_negative(void) {
   }
 }
 
-void test_ji_get_user_token_len_negative(void) {
+void test_negative_dbmgr_ji_get_user_token_len(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
   const char *group_id = "test-group";
@@ -4121,7 +5376,7 @@ void test_ji_get_user_token_len_negative(void) {
     TEST_ASSERT_EQUAL(SQC_RESULT_INVALID_ARGS, rc);
   }
 
-  // invalid remark_len
+  // invalid user_token_len
   {
     rc = dbmgr_ji_get_user_token_len(ji_ptr, NULL);
     TEST_ASSERT_EQUAL(SQC_RESULT_INVALID_ARGS, rc);
@@ -4134,7 +5389,115 @@ void test_ji_get_user_token_len_negative(void) {
   }
 }
 
-void test_ji_get_create_time_negative(void) {
+void test_negative_dbmgr_ji_get_exec_time_estimate_msec(void) {
+  sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
+  const char *user_id = "test-user";
+  const char *group_id = "test-group";
+  const uint8_t priority = 5;
+  const char *qprogram = "test-qprogram-data";
+  const sqc_rpc_sched_circuit_fmt_t circuit_fmt = SQC_RPC_SCHED_CIRCUIT_FMT_QIR;
+  const size_t shots = 30000;
+  const sqc_rpc_sched_qc_type_t qc_type = SQC_RPC_SCHED_QC_TYPE_RQC_REST;
+  const sqc_rpc_sched_transpiler_t transpiler = SQC_RPC_SCHED_TRANSPILER_NORMAL;
+  const char *remark = "test-remark-data";
+  const char *user_token = "test-user_token-data";
+  dbmgr_job_info_t ji_ptr = NULL;
+  uint64_t actual_exec_time_estimate_msec = 0;
+
+  // create record
+  {
+    rc = s_dbmgr_job_info_record_create(user_id, group_id, priority,
+                                        qprogram, circuit_fmt, shots,
+                                        qc_type, transpiler,
+                                        remark, user_token, &ji_ptr);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+  }
+
+  // invalid record
+  {
+    rc = dbmgr_ji_get_exec_time_estimate_msec(NULL, &actual_exec_time_estimate_msec);
+    TEST_ASSERT_EQUAL(SQC_RESULT_INVALID_ARGS, rc);
+  }
+
+  // invalid exec_time_estimate_msec
+  {
+    rc = dbmgr_ji_get_exec_time_estimate_msec(ji_ptr, NULL);
+    TEST_ASSERT_EQUAL(SQC_RESULT_INVALID_ARGS, rc);
+  }
+
+  // destroy record
+  {
+    s_dbmgr_job_info_record_destroy(ji_ptr);
+    ji_ptr = NULL;
+  }
+}
+
+void test_negative_dbmgr_ji_set_exec_time_estimate_msec(void) {
+  sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
+  const uint64_t exec_time_estimate_msec = 1000;
+
+  // invalid record
+  {
+    rc = dbmgr_ji_set_exec_time_estimate_msec(NULL, exec_time_estimate_msec);
+    TEST_ASSERT_EQUAL(SQC_RESULT_INVALID_ARGS, rc);
+  }
+}
+
+void test_negative_dbmgr_ji_get_exec_time_msec(void) {
+  sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
+  const char *user_id = "test-user";
+  const char *group_id = "test-group";
+  const uint8_t priority = 5;
+  const char *qprogram = "test-qprogram-data";
+  const sqc_rpc_sched_circuit_fmt_t circuit_fmt = SQC_RPC_SCHED_CIRCUIT_FMT_QIR;
+  const size_t shots = 30000;
+  const sqc_rpc_sched_qc_type_t qc_type = SQC_RPC_SCHED_QC_TYPE_RQC_REST;
+  const sqc_rpc_sched_transpiler_t transpiler = SQC_RPC_SCHED_TRANSPILER_NORMAL;
+  const char *remark = "test-remark-data";
+  const char *user_token = "test-user_token-data";
+  dbmgr_job_info_t ji_ptr = NULL;
+  uint64_t actual_exec_time_msec = 0;
+
+  // create record
+  {
+    rc = s_dbmgr_job_info_record_create(user_id, group_id, priority,
+                                        qprogram, circuit_fmt, shots,
+                                        qc_type, transpiler,
+                                        remark, user_token, &ji_ptr);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+  }
+
+  // invalid record
+  {
+    rc = dbmgr_ji_get_exec_time_msec(NULL, &actual_exec_time_msec);
+    TEST_ASSERT_EQUAL(SQC_RESULT_INVALID_ARGS, rc);
+  }
+
+  // invalid exec_time_msec
+  {
+    rc = dbmgr_ji_get_exec_time_msec(ji_ptr, NULL);
+    TEST_ASSERT_EQUAL(SQC_RESULT_INVALID_ARGS, rc);
+  }
+
+  // destroy record
+  {
+    s_dbmgr_job_info_record_destroy(ji_ptr);
+    ji_ptr = NULL;
+  }
+}
+
+void test_negative_dbmgr_ji_set_exec_time_msec(void) {
+  sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
+  const uint64_t exec_time_msec = 1000;
+
+  // invalid record
+  {
+    rc = dbmgr_ji_set_exec_time_msec(NULL, exec_time_msec);
+    TEST_ASSERT_EQUAL(SQC_RESULT_INVALID_ARGS, rc);
+  }
+}
+
+void test_negative_dbmgr_ji_get_created_time(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
   const char *group_id = "test-group";
@@ -4164,7 +5527,7 @@ void test_ji_get_create_time_negative(void) {
     TEST_ASSERT_EQUAL(SQC_RESULT_INVALID_ARGS, rc);
   }
 
-  // invalid remark_len
+  // invalid created_time
   {
     rc = dbmgr_ji_get_created_time(ji_ptr, NULL);
     TEST_ASSERT_EQUAL(SQC_RESULT_INVALID_ARGS, rc);
@@ -4177,7 +5540,7 @@ void test_ji_get_create_time_negative(void) {
   }
 }
 
-void test_ji_get_update_time_negative(void) {
+void test_negative_dbmgr_ji_get_update_time(void) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
   const char *user_id = "test-user";
   const char *group_id = "test-group";
@@ -4207,7 +5570,7 @@ void test_ji_get_update_time_negative(void) {
     TEST_ASSERT_EQUAL(SQC_RESULT_INVALID_ARGS, rc);
   }
 
-  // invalid remark_len
+  // invalid update_time
   {
     rc = dbmgr_ji_get_update_time(ji_ptr, NULL);
     TEST_ASSERT_EQUAL(SQC_RESULT_INVALID_ARGS, rc);
@@ -4220,3 +5583,107 @@ void test_ji_get_update_time_negative(void) {
   }
 }
 
+void test_negative_dbmgr_ji_clear_job_result(void) {
+  sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
+  const char *user_id = "test-user";
+  const char *group_id = "test-group";
+  const uint8_t priority = 5;
+  const char *qprogram = "test-qprogram-data";
+  const sqc_rpc_sched_circuit_fmt_t circuit_fmt = SQC_RPC_SCHED_CIRCUIT_FMT_QIR;
+  const size_t shots = 30000;
+  const sqc_rpc_sched_qc_type_t qc_type = SQC_RPC_SCHED_QC_TYPE_RQC_REST;
+  const sqc_rpc_sched_transpiler_t transpiler = SQC_RPC_SCHED_TRANSPILER_NORMAL;
+  const char *remark = "test-remark-data";
+  const char *user_token = "test-user_token-data";
+  const char *result = "test-result-data";
+  dbmgr_job_info_t ji_ptr = NULL;
+  sqc_rpc_sched_job_status_t actual_status = SQC_RPC_SCHED_JOB_STATUS_UNKNOWN;
+  char *actual_result = NULL;
+
+  // initialize
+  {
+    rc = s_dbmgr_db_initialize(SQC_RPC_SCHED_UT_DB_FILE);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+    TEST_ASSERT_NOT_NULL(sqc_rpc_sched_db);
+
+    rc = s_dbmgr_job_info_initialize();
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+  }
+
+  // invalid record
+  {
+    rc = dbmgr_ji_clear_job_result(NULL);
+    TEST_ASSERT_EQUAL(SQC_RESULT_INVALID_ARGS, rc);
+  }
+
+  // create job
+  {
+    rc = dbmgr_ji_create_job(user_id, group_id, priority,
+                             qprogram, circuit_fmt, shots,
+                             qc_type, transpiler,
+                             remark, user_token, &ji_ptr);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+  }
+
+  // set result & to running
+  {
+    rc = dbmgr_ji_set_result(ji_ptr, result, strlen(result));
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+
+    rc = dbmgr_set_job_status_queued(ji_ptr);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+    rc = dbmgr_set_job_status_running(ji_ptr);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+  }
+
+  // invalid state transition (running -> deleted)
+  {
+    rc = dbmgr_ji_clear_job_result(ji_ptr);
+    TEST_ASSERT_EQUAL(SQC_RESULT_INVALID_STATE_TRANSITION, rc);
+
+    rc = dbmgr_ji_get_status(ji_ptr, &actual_status);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+    TEST_ASSERT_EQUAL(SQC_RPC_SCHED_JOB_STATUS_RUNNING, actual_status);
+
+    rc = dbmgr_ji_get_result(ji_ptr, &actual_result);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+    TEST_ASSERT_EQUAL_STRING(result, actual_result);
+    free((void *) actual_result);
+    actual_result = NULL;
+  }
+
+  // delete job
+  {
+    rc = dbmgr_ji_delete_job(ji_ptr->job_id);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+  }
+
+  // finalize
+  s_dbmgr_job_info_finalize();
+
+  s_dbmgr_db_finalize();
+  TEST_ASSERT_NULL(sqc_rpc_sched_db);
+}
+
+void test_negative_dbmgr_ji_clear_job_arr_result(void) {
+  sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
+
+  // empty array
+  {
+    rc = dbmgr_ji_clear_job_arr_result(NULL, 0);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+  }
+
+  // NULL array with non-zero length
+  {
+    rc = dbmgr_ji_clear_job_arr_result(NULL, 1);
+    TEST_ASSERT_EQUAL(SQC_RESULT_INVALID_ARGS, rc);
+  }
+
+  // NULL elements are skipped without crashing
+  {
+    dbmgr_job_info_t ji_ptr_arr[2] = {NULL, NULL};
+    rc = dbmgr_ji_clear_job_arr_result(ji_ptr_arr, 2);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+  }
+}

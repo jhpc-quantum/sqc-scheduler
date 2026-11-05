@@ -729,10 +729,10 @@ s_dbmgr_db_busy_handler(void *ptr, int count) {
   (void) ptr;
 
   if (count >= 10) {
-    printf("DB is busy and timed out\n");
+    sqc_msg_error("DB is busy and timed out\n");
     return 0; // SQLITE_BUSY error
   }
-  printf("DB is busy. retrying: %d\n", count);
+  sqc_msg_warning("DB is busy. retrying: %d\n", count);
   return 1; // continue retry
 }
 
@@ -821,7 +821,8 @@ s_dbmgr_db_user_info_select_all(dbmgr_user_info_t **ui_arr_ptr, int *count, size
 
     if (db_rc == SQLITE_DONE) {
       rc = SQC_RESULT_OK;
-    } else {
+    } else if (db_rc != SQLITE_ROW) {
+      // Exited via break: already logged
       sqc_msg_error("Failed to SELECT user_info record: %s\n", sqlite3_errmsg(sqc_rpc_sched_db));
       rc = SQC_RESULT_ANY_RUNTIME_ERROR;
     }
@@ -917,6 +918,7 @@ s_dbmgr_db_user_info_deserialize_all(sqc_hashmap_t *user_info_hashmap) {
     sqlite3_prepare_v2(sqc_rpc_sched_db, SQC_RPC_SCHED_DB_USER_INFO_SELECT_ALL, -1, &stmt, NULL);
     while ((db_rc = sqlite3_step(stmt)) == SQLITE_ROW) {
       dbmgr_user_info_t ui_ptr;
+      void *add_val;
       const unsigned char *user_id = sqlite3_column_text(stmt, 0);
       const int role_type = sqlite3_column_int(stmt, 1);
       const int status = sqlite3_column_int(stmt, 2);
@@ -933,8 +935,10 @@ s_dbmgr_db_user_info_deserialize_all(sqc_hashmap_t *user_info_hashmap) {
         break;
       }
 
+      // Pass a copy since sqc_hashmap_add() overwrites it with the old value
+      add_val = ui_ptr;
       rc = sqc_hashmap_add(user_info_hashmap, (char *) (ui_ptr->user_id),
-                                              (void **) &ui_ptr, false);
+                                              &add_val, false);
       if (rc != SQC_RESULT_OK) {
         sqc_msg_error("Failed to add to user Hashmap: user_id=%s\n", ui_ptr->user_id);
         s_dbmgr_user_info_destroy(ui_ptr);
@@ -946,7 +950,8 @@ s_dbmgr_db_user_info_deserialize_all(sqc_hashmap_t *user_info_hashmap) {
 
     if (db_rc == SQLITE_DONE) {
       rc = SQC_RESULT_OK;
-    } else {
+    } else if (db_rc != SQLITE_ROW) {
+      // Exited via break: already logged
       sqc_msg_error("Failed to SELECT user_info record: %s\n", sqlite3_errmsg(sqc_rpc_sched_db));
       rc = SQC_RESULT_ANY_RUNTIME_ERROR;
     }
@@ -1008,6 +1013,10 @@ s_dbmgr_db_user_info_update_role_type(const char *user_id, const uint8_t role_ty
 
     db_rc = sqlite3_step(stmt);
     if (db_rc == SQLITE_DONE) {
+      // Target record not found
+      if (sqlite3_changes(sqc_rpc_sched_db) == 0) {
+        sqc_msg_warning("No user_info record updated(role_type): user_id=%s\n", user_id);
+      }
       rc = SQC_RESULT_OK;
     } else {
       sqc_msg_error("Failed to UPDATE user role type: user_id=%s, err_msg=%s\n",
@@ -1039,6 +1048,10 @@ s_dbmgr_db_user_info_update_status(const char *user_id, const uint8_t status,
 
     db_rc = sqlite3_step(stmt);
     if (db_rc == SQLITE_DONE) {
+      // Target record not found
+      if (sqlite3_changes(sqc_rpc_sched_db) == 0) {
+        sqc_msg_warning("No user_info record updated(status): user_id=%s\n", user_id);
+      }
       rc = SQC_RESULT_OK;
     } else {
       sqc_msg_error("Failed to UPDATE user status: user_id=%s, err_msg=%s\n",
@@ -1095,7 +1108,8 @@ s_dbmgr_db_group_info_select_all(dbmgr_group_info_t **gi_arr_ptr, int *count, si
 
     if (db_rc == SQLITE_DONE) {
       rc = SQC_RESULT_OK;
-    } else {
+    } else if (db_rc != SQLITE_ROW) {
+      // Exited via break: already logged
       sqc_msg_error("Failed to SELECT group_info record: %s\n", sqlite3_errmsg(sqc_rpc_sched_db));
       rc = SQC_RESULT_ANY_RUNTIME_ERROR;
     }
@@ -1192,6 +1206,7 @@ s_dbmgr_db_group_info_deserialize_all(sqc_hashmap_t *group_info_hashmap) {
     sqlite3_prepare_v2(sqc_rpc_sched_db, SQC_RPC_SCHED_DB_GROUP_INFO_SELECT_ALL, -1, &stmt, NULL);
     while ((db_rc = sqlite3_step(stmt)) == SQLITE_ROW) {
       dbmgr_group_info_t gi_ptr;
+      void *add_val;
       const unsigned char *group_id = sqlite3_column_text(stmt, 0);
       const int64_t exec_time_limit_msec = sqlite3_column_int64(stmt, 1);
       const int64_t exec_time_total_msec = sqlite3_column_int64(stmt, 2);
@@ -1209,8 +1224,10 @@ s_dbmgr_db_group_info_deserialize_all(sqc_hashmap_t *group_info_hashmap) {
         break;
       }
 
+      // Pass a copy since sqc_hashmap_add() overwrites it with the old value
+      add_val = gi_ptr;
       rc = sqc_hashmap_add(group_info_hashmap, (char *) (gi_ptr->group_id),
-                                               (void **) &gi_ptr, false);
+                                               &add_val, false);
       if (rc != SQC_RESULT_OK) {
         sqc_msg_error("Failed to add to group Hashmap: group_id=%s\n", gi_ptr->group_id);
         s_dbmgr_group_info_destroy(gi_ptr);
@@ -1222,7 +1239,8 @@ s_dbmgr_db_group_info_deserialize_all(sqc_hashmap_t *group_info_hashmap) {
 
     if (db_rc == SQLITE_DONE) {
       rc = SQC_RESULT_OK;
-    } else {
+    } else if (db_rc != SQLITE_ROW) {
+      // Exited via break: already logged
       sqc_msg_error("Failed to SELECT group_info record: %s\n", sqlite3_errmsg(sqc_rpc_sched_db));
       rc = SQC_RESULT_ANY_RUNTIME_ERROR;
     }
@@ -1286,6 +1304,10 @@ s_dbmgr_db_group_info_update_exec_time_limit_msec(const char *group_id,
 
     db_rc = sqlite3_step(stmt);
     if (db_rc == SQLITE_DONE) {
+      // Target record not found
+      if (sqlite3_changes(sqc_rpc_sched_db) == 0) {
+        sqc_msg_warning("No group_info record updated(exec_time_limit_msec): group_id=%s\n", group_id);
+      }
       rc = SQC_RESULT_OK;
     } else {
       sqc_msg_error("Failed to UPDATE group exec_time_limit_msec: group_id=%s, err_msg=%s\n",
@@ -1318,6 +1340,10 @@ s_dbmgr_db_group_info_update_exec_time_total_msec(const char *group_id,
 
     db_rc = sqlite3_step(stmt);
     if (db_rc == SQLITE_DONE) {
+      // Target record not found
+      if (sqlite3_changes(sqc_rpc_sched_db) == 0) {
+        sqc_msg_warning("No group_info record updated(exec_time_total_msec): group_id=%s\n", group_id);
+      }
       rc = SQC_RESULT_OK;
     } else {
       sqc_msg_error("Failed to UPDATE group exec_time_total_msec: group_id=%s, err_msg=%s\n",
@@ -1374,7 +1400,8 @@ s_dbmgr_db_user_group_info_select_all(dbmgr_user_group_info_t **ugi_arr_ptr, int
 
     if (db_rc == SQLITE_DONE) {
       rc = SQC_RESULT_OK;
-    } else {
+    } else if (db_rc != SQLITE_ROW) {
+      // Exited via break: already logged
       sqc_msg_error("Failed to SELECT user_group_info record: %s\n", sqlite3_errmsg(sqc_rpc_sched_db));
       rc = SQC_RESULT_ANY_RUNTIME_ERROR;
     }
@@ -1473,6 +1500,7 @@ s_dbmgr_db_user_group_info_deserialize_all(sqc_hashmap_t *user_group_info_hashma
     sqlite3_prepare_v2(sqc_rpc_sched_db, SQC_RPC_SCHED_DB_USER_GROUP_INFO_SELECT_ALL, -1, &stmt, NULL);
     while ((db_rc = sqlite3_step(stmt)) == SQLITE_ROW) {
       dbmgr_user_group_info_t ugi_ptr;
+      void *add_val;
       const unsigned char *user_id = sqlite3_column_text(stmt, 0);
       const unsigned char *group_id = sqlite3_column_text(stmt, 1);
       const int status = sqlite3_column_int(stmt, 2);
@@ -1490,8 +1518,10 @@ s_dbmgr_db_user_group_info_deserialize_all(sqc_hashmap_t *user_group_info_hashma
         break;
       }
 
+      // Pass a copy since sqc_hashmap_add() overwrites it with the old value
+      add_val = ugi_ptr;
       rc = sqc_hashmap_add(user_group_info_hashmap, (char *) (ugi_ptr->user_group_key),
-                                                    (void **) &ugi_ptr, false);
+                                                    &add_val, false);
       if (rc != SQC_RESULT_OK) {
         sqc_msg_error("Failed to add to user_group Hashmap: user_id=%s, group_id=%s\n",
                       ugi_ptr->user_id, ugi_ptr->group_id);
@@ -1504,7 +1534,8 @@ s_dbmgr_db_user_group_info_deserialize_all(sqc_hashmap_t *user_group_info_hashma
 
     if (db_rc == SQLITE_DONE) {
       rc = SQC_RESULT_OK;
-    } else {
+    } else if (db_rc != SQLITE_ROW) {
+      // Exited via break: already logged
       sqc_msg_error("Failed to SELECT user_group_info record: %s\n", sqlite3_errmsg(sqc_rpc_sched_db));
       rc = SQC_RESULT_ANY_RUNTIME_ERROR;
     }
@@ -1569,6 +1600,10 @@ s_dbmgr_db_user_group_info_update_status(const char *user_id, const char *group_
 
     db_rc = sqlite3_step(stmt);
     if (db_rc == SQLITE_DONE) {
+      // Target record not found
+      if (sqlite3_changes(sqc_rpc_sched_db) == 0) {
+        sqc_msg_warning("No user_group_info record updated(status): user_id=%s, group_id=%s\n", user_id, group_id);
+      }
       rc = SQC_RESULT_OK;
     } else {
       sqc_msg_error("Failed to UPDATE user_group status: user_id=%s, group_id=%s, err_msg=%s\n",
@@ -1649,7 +1684,8 @@ s_dbmgr_db_job_info_select_all(dbmgr_job_info_t **ji_arr_ptr, int *count, size_t
 
     if (db_rc == SQLITE_DONE) {
       rc = SQC_RESULT_OK;
-    } else {
+    } else if (db_rc != SQLITE_ROW) {
+      // Exited via break: already logged
       sqc_msg_error("Failed to SELECT job_info record: %s\n", sqlite3_errmsg(sqc_rpc_sched_db));
       rc = SQC_RESULT_ANY_RUNTIME_ERROR;
     }
@@ -1770,6 +1806,7 @@ s_dbmgr_db_job_info_deserialize_all(sqc_hashmap_t *job_info_hashmap) {
     sqlite3_prepare_v2(sqc_rpc_sched_db, SQC_RPC_SCHED_DB_JOB_INFO_SELECT_ALL, -1, &stmt, NULL);
     while ((db_rc = sqlite3_step(stmt)) == SQLITE_ROW) {
       dbmgr_job_info_t ji_ptr;
+      void *add_val;
       const unsigned char *job_id = sqlite3_column_text(stmt, 0);
       const unsigned char *user_id = sqlite3_column_text(stmt, 1);
       const unsigned char *group_id = sqlite3_column_text(stmt, 2);
@@ -1812,8 +1849,10 @@ s_dbmgr_db_job_info_deserialize_all(sqc_hashmap_t *job_info_hashmap) {
         break;
       }
 
+      // Pass a copy since sqc_hashmap_add() overwrites it with the old value
+      add_val = ji_ptr;
       rc = sqc_hashmap_add(job_info_hashmap, (char *) (ji_ptr->job_id),
-                                             (void **) &ji_ptr, false);
+                                             &add_val, false);
       if (rc != SQC_RESULT_OK) {
         sqc_msg_error("Failed to add to job Hashmap: job_id=%s\n", ji_ptr->job_id);
         s_dbmgr_job_info_destroy(ji_ptr);
@@ -1825,7 +1864,8 @@ s_dbmgr_db_job_info_deserialize_all(sqc_hashmap_t *job_info_hashmap) {
 
     if (db_rc == SQLITE_DONE) {
       rc = SQC_RESULT_OK;
-    } else {
+    } else if (db_rc != SQLITE_ROW) {
+      // Exited via break: already logged
       sqc_msg_error("Failed to SELECT job_info record: %s\n", sqlite3_errmsg(sqc_rpc_sched_db));
       rc = SQC_RESULT_ANY_RUNTIME_ERROR;
     }
@@ -1900,6 +1940,10 @@ s_dbmgr_db_job_info_update_queued_status(const char *job_id, const int64_t queue
 
     db_rc = sqlite3_step(stmt);
     if (db_rc == SQLITE_DONE) {
+      // Target record not found
+      if (sqlite3_changes(sqc_rpc_sched_db) == 0) {
+        sqc_msg_warning("No job_info record updated(QUEUED): job_id=%s\n", job_id);
+      }
       rc = SQC_RESULT_OK;
     } else {
       sqc_msg_error("Failed to UPDATE job status(QUEUED): job_id=%s, err_msg=%s\n",
@@ -1932,6 +1976,10 @@ s_dbmgr_db_job_info_update_running_status(const char *job_id, const int64_t runn
 
     db_rc = sqlite3_step(stmt);
     if (db_rc == SQLITE_DONE) {
+      // Target record not found
+      if (sqlite3_changes(sqc_rpc_sched_db) == 0) {
+        sqc_msg_warning("No job_info record updated(RUNNING): job_id=%s\n", job_id);
+      }
       rc = SQC_RESULT_OK;
     } else {
       sqc_msg_error("Failed to UPDATE job status(RUNNING): job_id=%s, err_msg=%s\n",
@@ -1964,6 +2012,10 @@ s_dbmgr_db_job_info_update_done_status(const char *job_id, const int64_t done_ti
 
     db_rc = sqlite3_step(stmt);
     if (db_rc == SQLITE_DONE) {
+      // Target record not found
+      if (sqlite3_changes(sqc_rpc_sched_db) == 0) {
+        sqc_msg_warning("No job_info record updated(DONE): job_id=%s\n", job_id);
+      }
       rc = SQC_RESULT_OK;
     } else {
       sqc_msg_error("Failed to UPDATE job status(DONE): job_id=%s, err_msg=%s\n",
@@ -1996,6 +2048,10 @@ s_dbmgr_db_job_info_update_cancelled_status(const char *job_id, const int64_t ca
 
     db_rc = sqlite3_step(stmt);
     if (db_rc == SQLITE_DONE) {
+      // Target record not found
+      if (sqlite3_changes(sqc_rpc_sched_db) == 0) {
+        sqc_msg_warning("No job_info record updated(CANCELLED): job_id=%s\n", job_id);
+      }
       rc = SQC_RESULT_OK;
     } else {
       sqc_msg_error("Failed to UPDATE job status(CANCELLED): job_id=%s, err_msg=%s\n",
@@ -2028,6 +2084,10 @@ s_dbmgr_db_job_info_update_error_status(const char *job_id, const int64_t error_
 
     db_rc = sqlite3_step(stmt);
     if (db_rc == SQLITE_DONE) {
+      // Target record not found
+      if (sqlite3_changes(sqc_rpc_sched_db) == 0) {
+        sqc_msg_warning("No job_info record updated(ERROR): job_id=%s\n", job_id);
+      }
       rc = SQC_RESULT_OK;
     } else {
       sqc_msg_error("Failed to UPDATE job status(ERROR): job_id=%s, err_msg=%s\n",
@@ -2060,6 +2120,10 @@ s_dbmgr_db_job_info_update_deleted_status(const char *job_id, const int64_t dele
 
     db_rc = sqlite3_step(stmt);
     if (db_rc == SQLITE_DONE) {
+      // Target record not found
+      if (sqlite3_changes(sqc_rpc_sched_db) == 0) {
+        sqc_msg_warning("No job_info record updated(DELETED): job_id=%s\n", job_id);
+      }
       rc = SQC_RESULT_OK;
     } else {
       sqc_msg_error("Failed to UPDATE job status(DELETED): job_id=%s, err_msg=%s\n",
@@ -2091,6 +2155,10 @@ s_dbmgr_db_job_info_update_qc_job_id(const char *job_id, const char *qc_job_id,
 
     db_rc = sqlite3_step(stmt);
     if (db_rc == SQLITE_DONE) {
+      // Target record not found
+      if (sqlite3_changes(sqc_rpc_sched_db) == 0) {
+        sqc_msg_warning("No job_info record updated(qc_job_id): job_id=%s\n", job_id);
+      }
       rc = SQC_RESULT_OK;
     } else {
       sqc_msg_error("Failed to UPDATE job qc_job_id: job_id=%s, err_msg=%s\n",
@@ -2122,6 +2190,10 @@ s_dbmgr_db_job_info_update_result(const char *job_id, const char *result,
 
     db_rc = sqlite3_step(stmt);
     if (db_rc == SQLITE_DONE) {
+      // Target record not found
+      if (sqlite3_changes(sqc_rpc_sched_db) == 0) {
+        sqc_msg_warning("No job_info record updated(result): job_id=%s\n", job_id);
+      }
       rc = SQC_RESULT_OK;
     } else {
       sqc_msg_error("Failed to UPDATE job result: job_id=%s, err_msg=%s\n",
@@ -2154,6 +2226,10 @@ s_dbmgr_db_job_info_update_exec_time_estimate_msec(const char *job_id,
 
     db_rc = sqlite3_step(stmt);
     if (db_rc == SQLITE_DONE) {
+      // Target record not found
+      if (sqlite3_changes(sqc_rpc_sched_db) == 0) {
+        sqc_msg_warning("No job_info record updated(exec_time_estimate_msec): job_id=%s\n", job_id);
+      }
       rc = SQC_RESULT_OK;
     } else {
       sqc_msg_error("Failed to UPDATE job exec_time_estimate_msec: job_id=%s, err_msg=%s\n",
@@ -2186,6 +2262,10 @@ s_dbmgr_db_job_info_update_exec_time_msec(const char *job_id,
 
     db_rc = sqlite3_step(stmt);
     if (db_rc == SQLITE_DONE) {
+      // Target record not found
+      if (sqlite3_changes(sqc_rpc_sched_db) == 0) {
+        sqc_msg_warning("No job_info record updated(exec_time_msec): job_id=%s\n", job_id);
+      }
       rc = SQC_RESULT_OK;
     } else {
       sqc_msg_error("Failed to UPDATE job exec_time_msec: job_id=%s, err_msg=%s\n",
@@ -2218,6 +2298,10 @@ s_dbmgr_db_job_info_clear_result(const char *job_id, const int64_t deleted_time,
 
     db_rc = sqlite3_step(stmt);
     if (db_rc == SQLITE_DONE) {
+      // Target record not found
+      if (sqlite3_changes(sqc_rpc_sched_db) == 0) {
+        sqc_msg_warning("No job_info record updated(result clear): job_id=%s\n", job_id);
+      }
       rc = SQC_RESULT_OK;
     } else {
       sqc_msg_error("Failed to UPDATE job result(clear): job_id=%s, err_msg=%s\n",
@@ -2284,7 +2368,8 @@ s_dbmgr_db_weight_info_select_all(dbmgr_weight_info_t **wi_arr_ptr, int *count, 
 
     if (db_rc == SQLITE_DONE) {
       rc = SQC_RESULT_OK;
-    } else {
+    } else if (db_rc != SQLITE_ROW) {
+      // Exited via break: already logged
       sqc_msg_error("Failed to SELECT weight_info record: %s\n", sqlite3_errmsg(sqc_rpc_sched_db));
       rc = SQC_RESULT_ANY_RUNTIME_ERROR;
     }
@@ -2382,6 +2467,7 @@ s_dbmgr_db_weight_info_deserialize_all(sqc_hashmap_t *weight_info_hashmap) {
     sqlite3_prepare_v2(sqc_rpc_sched_db, SQC_RPC_SCHED_DB_WEIGHT_INFO_SELECT_ALL, -1, &stmt, NULL);
     while ((db_rc = sqlite3_step(stmt)) == SQLITE_ROW) {
       dbmgr_weight_info_t wi_ptr = NULL;
+      void *add_val;
       const int priority = sqlite3_column_int(stmt, 0);
       const int64_t weight = sqlite3_column_int64(stmt, 1);
       const int64_t created_time = sqlite3_column_int64(stmt, 2);
@@ -2407,12 +2493,15 @@ s_dbmgr_db_weight_info_deserialize_all(sqc_hashmap_t *weight_info_hashmap) {
         break;
       }
 
+      // Pass a copy since sqc_hashmap_add() overwrites it with the old value
+      add_val = wi_ptr;
       rc = sqc_hashmap_add(weight_info_hashmap,
                            (void *)(uintptr_t)wi_ptr->priority,
-                           (void **)&wi_ptr, false);
+                           &add_val, false);
       if (rc != SQC_RESULT_OK) {
         sqc_msg_error("Failed to add to weight Hashmap: priority=%d\n", wi_ptr->priority);
         s_dbmgr_weight_info_destroy(wi_ptr);
+        rc = SQC_RESULT_ANY_RUNTIME_ERROR;
         break;
       }
     }
@@ -2426,7 +2515,8 @@ s_dbmgr_db_weight_info_deserialize_all(sqc_hashmap_t *weight_info_hashmap) {
                       deserialized_count, SQC_RPC_SCHED_PQ_NUM);
         rc = SQC_RESULT_ANY_RUNTIME_ERROR;
       }
-    } else {
+    } else if (db_rc != SQLITE_ROW) {
+      // Exited via break: already logged
       sqc_msg_error("Failed to SELECT weight_info record: %s\n", sqlite3_errmsg(sqc_rpc_sched_db));
       rc = SQC_RESULT_ANY_RUNTIME_ERROR;
     }
@@ -2496,6 +2586,10 @@ s_dbmgr_db_weight_info_update_weight(const uint8_t priority, const uint64_t weig
 
     db_rc = sqlite3_step(stmt);
     if (db_rc == SQLITE_DONE) {
+      // Target record not found
+      if (sqlite3_changes(sqc_rpc_sched_db) == 0) {
+        sqc_msg_warning("No weight_info record updated(weight): priority=%u\n", priority);
+      }
       rc = SQC_RESULT_OK;
     } else {
       sqc_msg_error("Failed to UPDATE weight_info: priority=%u, err_msg=%s\n",

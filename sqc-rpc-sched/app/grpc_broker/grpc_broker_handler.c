@@ -118,8 +118,6 @@ s_grpc_broker_handler_submit_job(const char *token, uint32_t priority, const cha
             if (rc == SQC_RESULT_OK) {
               sqc_msg_info("%s: Submitted: job_id=%s\n", log_prefix, *job_id);
             } else {
-              s_grpc_create_message_text(reply_msg, "Failed to create a job, %s",
-                                         sqc_error_get_string(rc));
               s_grpc_log_error_msg(log_prefix, *reply_msg);
             }
           } else {

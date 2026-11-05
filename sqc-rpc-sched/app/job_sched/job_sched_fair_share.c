@@ -305,6 +305,7 @@ s_fair_share_sched_initialize(void) {
         rr_order_str != NULL) {
       sqc_msg_info("Group RR order: [%s]\n", rr_order_str);
     }
+    free(rr_order_str);
     sqc_dstring_destroy(&rr_order_ds);
   }
 

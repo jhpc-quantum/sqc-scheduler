@@ -427,6 +427,14 @@ s_create_from_conf_dir(rpc_session_client_t *rpc_session, const char *server, bo
     expand_result = rpc_expand_path(dir, &exp_dir);
 
     if (likely(expand_result == SQC_RESULT_OK)) {
+      if (auth_method == RPC_AUTH_METHOD_JWT) {
+        ret = rpc_jwt_client_refresh_from_conf_dir(exp_dir);
+        if (ret != SQC_RESULT_OK) {
+          free(exp_dir);
+          return ret;
+        }
+      }
+
       tls_conf_result = sqc_tls_conf_create_from_conf_dir(&tls_conf, exp_dir, TLS_ROLE_CLIENT);
       if (likely(tls_conf_result == SQC_RESULT_OK)) {
         sqc_tls_conf_dump(tls_conf);

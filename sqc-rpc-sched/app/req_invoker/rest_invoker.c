@@ -103,6 +103,7 @@ s_calculate_invoke(const dbmgr_job_info_t ji_ptr,
   char *output = NULL;
   size_t output_len = 0;
   int ret = 0;
+  sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
 
   if (dbmgr_set_job_status_running(ji_ptr) == SQC_RESULT_OK) {
     if (dbmgr_ji_get_qprogram(ji_ptr, &qprogram) == SQC_RESULT_OK &&
@@ -126,7 +127,11 @@ s_calculate_invoke(const dbmgr_job_info_t ji_ptr,
         if (dbmgr_ji_set_result(ji_ptr, output, output_len) == SQC_RESULT_OK) {
           sqc_msg_info("Successfully saved the results.\n");
 
-          if (dbmgr_set_job_status_done(ji_ptr) != SQC_RESULT_OK) {
+          rc = dbmgr_set_job_status_done(ji_ptr);
+          if (rc == SQC_RESULT_INVALID_STATE_TRANSITION) {
+            // The job was cancelled while running.
+            sqc_msg_warning("Job was cancelled before transition to done.\n");
+          } else if (rc != SQC_RESULT_OK) {
             sqc_msg_error("Failed to transition status to done.\n");
           }
         } else {
@@ -232,6 +237,7 @@ s_rest_invoke(const dbmgr_job_info_t ji_ptr,
   sqc_chrono_t job_begin_time_nsec = 0;
   sqc_chrono_t job_end_time_nsec = 0;
   uint64_t exec_time_msec;
+  sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
 
   if (likely(dbmgr_set_job_status_running(ji_ptr) == SQC_RESULT_OK)) {
     if (dbmgr_ji_get_job_id(ji_ptr, &job_id) == SQC_RESULT_OK &&
@@ -288,6 +294,17 @@ s_rest_invoke(const dbmgr_job_info_t ji_ptr,
               if (ret == 0) {
                   sqc_msg_info("cancel_job succeeded: job_id=%s, qc_job_id=%s\n",
                                job_id, qc_job_id);
+
+                  // Charge the execution time until the cancellation
+                  job_end_time_nsec = sqc_chrono_now();
+                  exec_time_msec = (uint64_t)((job_end_time_nsec - job_begin_time_nsec) / 1000000LL);
+                  if (likely(dbmgr_ji_set_exec_time_msec(ji_ptr, exec_time_msec) == SQC_RESULT_OK)) {
+                    sqc_msg_info("Save exec_time_msec succeeded: job_id=%s, qc_job_id=%s, exec_time_msec=%ld\n",
+                                 job_id, qc_job_id, exec_time_msec);
+                  } else {
+                    sqc_msg_warning("Save exec_time_msec failed: job_id=%s, qc_job_id=%s, exec_time_msec=%ld\n",
+                                    job_id, qc_job_id, exec_time_msec);
+                  }
                   goto done;
               } else {
                   sqc_msg_error("Failed to cancel_job: job_id=%s, qc_job_id=%s, err_msg=%s\n",
@@ -435,7 +452,12 @@ s_rest_invoke(const dbmgr_job_info_t ji_ptr,
           if (likely(dbmgr_ji_set_result(ji_ptr, result, result_len) == SQC_RESULT_OK)) {
             sqc_msg_info("Save results succeeded: job_id=%s, qc_job_id=%s\n", job_id, qc_job_id);
 
-            if (dbmgr_set_job_status_done(ji_ptr) != SQC_RESULT_OK) {
+            rc = dbmgr_set_job_status_done(ji_ptr);
+            if (rc == SQC_RESULT_INVALID_STATE_TRANSITION) {
+              // The job was cancelled after the QC job had finished.
+              sqc_msg_warning("Job was cancelled before transition to done: job_id=%s, qc_job_id=%s\n",
+                              job_id, qc_job_id);
+            } else if (rc != SQC_RESULT_OK) {
               sqc_msg_error("Failed to transition status to done: job_id=%s, qc_job_id=%s\n",
                             job_id, qc_job_id);
             }

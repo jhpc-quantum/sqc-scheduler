@@ -14,7 +14,7 @@ $ sudo apt install build-essential cmake libtool pkg-config libboost-all-dev lib
 $ sudo dnf install epel-release
 $ sudo dnf config-manager --set-enabled crb
 $ sudo dnf groupinstall "Development Tools"
-$ sudo dnf install cmake openssl-devel boost-devel python3-devel perl perl-devel nkf munge-devel gmp-devel libsqlite3x-devel libuuid-devel
+$ sudo dnf install cmake openssl openssl-devel boost-devel python3-devel perl perl-devel nkf munge-devel gmp-devel libsqlite3x-devel libuuid-devel
 ```
 
 ## Build

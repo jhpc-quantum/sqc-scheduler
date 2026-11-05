@@ -116,6 +116,27 @@ rpc_jwt_client_get_token(rpc_jwt_client_ctx_t* ctx, char** token);
 void
 rpc_jwt_client_dump_ctx(rpc_jwt_client_ctx_t* ctx);
 
+
+///
+/// @brief    Refresh a token under the specified directory by an external helper.
+///
+/// @param[in]     dir            A directory where files related to JWT are located.
+///
+/// @retval SQC_RESULT_OK                        Succeeded, or no helper is configured.
+/// @retval SQC_RESULT_POSIX_API_ERROR           Failed, an error occurred in POSIX API.
+/// @retval SQC_RESULT_INVALID_ARGS              Failed, invalid arguments or configuration.
+/// @retval SQC_RESULT_TIMEDOUT                  Failed, the helper timed out.
+/// @retval SQC_RESULT_AUTHENTICATION_ERROR      Failed, the helper exited abnormally.
+/// @retval SQC_RESULT_INVALID_JWT_TOKEN         Failed, the token is not fresh enough.
+/// @retval SQC_RESULT_ANY_FAILURES              Failed, any other reason.
+///
+/// @details The function <tt>rpc_jwt_client_refresh_from_conf_dir()</tt> runs the helper
+/// specified by \c SQC_TOKEN_REFRESH_HELPER if the token file in \c dir is not fresh.
+/// It does nothing if \c SQC_TOKEN_REFRESH_HELPER is not set.
+///
+sqc_result_t
+rpc_jwt_client_refresh_from_conf_dir(const char *dir);
+
 #ifdef __cplusplus
 }
 #endif // __cplusplus

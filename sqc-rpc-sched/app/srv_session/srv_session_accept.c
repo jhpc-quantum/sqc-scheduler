@@ -377,6 +377,7 @@ s_srvsession_accept(void) {
     rc = sqc_endpoint_accept(&endpoint, &new_fd, &addr, &addrlen);
     if (likely(rc == SQC_RESULT_OK && new_fd >= 0)) {
       rpc_session_server_t session = NULL;
+      // On success, 'new_fd' is owned (and closed) by 'session'.
       rc = rpc_session_server_create(&session, new_fd, &addr, addrlen,
                                      srvsession_get_tls_conf(),
                                      srvsession_get_jwt_ctx());
@@ -397,10 +398,14 @@ s_srvsession_accept(void) {
           }
         } else {
           sqc_msg_error("Failed to create thread: %s\n", sqc_error_get_string(rc));
+          rpc_session_server_destroy(&session);
         }
       } else {
         sqc_msg_error("Failed to create a session for a connected client: %s\n",
                       sqc_error_get_string(rc));
+        // On failure, 'new_fd' is still owned by the caller.
+        (void)close(new_fd);
+        new_fd = -1;
       }
     } else {
       sqc_msg_error("Failed to accept a connection from a client: %s\n", sqc_error_get_string(rc));
