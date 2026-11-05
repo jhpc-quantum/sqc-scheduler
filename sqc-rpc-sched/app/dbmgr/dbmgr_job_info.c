@@ -283,7 +283,7 @@ s_dbmgr_job_info_record_find_by_user_id(const char *target_user_id,
   user_filter_ctx_t ctx;
 
   if (likely(job_info_hashmap != NULL)) {
-    if (likely(IS_VALID_STRING(target_user_id) == true)) {
+    if (likely(ji_ptr_arr != NULL && arr_len != NULL && IS_VALID_STRING(target_user_id) == true)) {
       if ((rc = sqc_hashmap_size(&job_info_hashmap)) >= 0) {
         job_info_size = (size_t)rc;
         if (job_info_size > 0) {
@@ -309,6 +309,7 @@ s_dbmgr_job_info_record_find_by_user_id(const char *target_user_id,
           }
         } else {
           rc = SQC_RESULT_OK;
+          *ji_ptr_arr = NULL;
           *arr_len = 0;
           return rc;
         }
@@ -368,6 +369,10 @@ s_dbmgr_job_info_record_find_by_job_status(const sqc_rpc_sched_job_status_t targ
   job_status_filter_ctx_t ctx;
 
   if (likely(job_info_hashmap != NULL)) {
+    if (unlikely(ji_ptr_arr == NULL || arr_len == NULL)) {
+      return SQC_RESULT_INVALID_ARGS;
+    }
+
     if ((rc = sqc_hashmap_size(&job_info_hashmap)) >= 0) {
       job_info_size = (size_t)rc;
       if (job_info_size > 0) {
@@ -393,6 +398,7 @@ s_dbmgr_job_info_record_find_by_job_status(const sqc_rpc_sched_job_status_t targ
         }
       } else {
         rc = SQC_RESULT_OK;
+        *ji_ptr_arr = NULL;
         *arr_len = 0;
         return rc;
       }
@@ -448,6 +454,10 @@ s_dbmgr_job_info_record_find_by_created_time(const sqc_chrono_t from_time, const
   created_time_filter_ctx_t ctx;
 
   if (likely(job_info_hashmap != NULL)) {
+    if (unlikely(ji_ptr_arr == NULL || arr_len == NULL)) {
+      return SQC_RESULT_INVALID_ARGS;
+    }
+
     if ((rc = sqc_hashmap_size(&job_info_hashmap)) >= 0) {
       job_info_size = (size_t)rc;
       if (job_info_size > 0) {
@@ -474,6 +484,7 @@ s_dbmgr_job_info_record_find_by_created_time(const sqc_chrono_t from_time, const
         }
       } else {
         rc = SQC_RESULT_OK;
+        *ji_ptr_arr = NULL;
         *arr_len = 0;
         return rc;
       }
@@ -545,6 +556,10 @@ s_dbmgr_job_info_record_find_by_delete_target(const char *target_user_id,
   delete_target_filter_ctx_t ctx;
 
   if (likely(job_info_hashmap != NULL)) {
+    if (unlikely(ji_ptr_arr == NULL || arr_len == NULL)) {
+      return SQC_RESULT_INVALID_ARGS;
+    }
+
     if ((rc = sqc_hashmap_size(&job_info_hashmap)) >= 0) {
       job_info_size = (size_t)rc;
       if (job_info_size > 0) {
@@ -577,6 +592,7 @@ s_dbmgr_job_info_record_find_by_delete_target(const char *target_user_id,
         }
       } else {
         rc = SQC_RESULT_OK;
+        *ji_ptr_arr = NULL;
         *arr_len = 0;
         return rc;
       }
@@ -808,12 +824,17 @@ static inline sqc_result_t
 s_dbmgr_job_info_arr_clear_result(dbmgr_job_info_t *ji_ptr_arr, const size_t arr_len) {
   sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
 
+  if (ji_ptr_arr == NULL && arr_len > 0) {
+    return SQC_RESULT_INVALID_ARGS;
+  }
+
   // TODO: Consider using transactions to perform batch processing.
   for (size_t i = 0; i < arr_len; i++) {
     rc = s_dbmgr_job_info_clear_result(ji_ptr_arr[i]);
     if (rc != SQC_RESULT_OK) {
       sqc_msg_error("Failed to clear result: job_id=%s, err_msg=%s\n",
-                    ji_ptr_arr[i]->job_id, sqc_error_get_string(rc));
+                    (ji_ptr_arr[i] != NULL) ? ji_ptr_arr[i]->job_id : "(null)",
+                    sqc_error_get_string(rc));
     }
   }
 

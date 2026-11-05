@@ -47,6 +47,7 @@ static inline void
 s_dummy_invoke(const dbmgr_job_info_t ji_ptr) {
   const size_t dummy_result_len = strlen(DUMMY_RESULT);
   char *remark = NULL;
+  sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
 
   if (dbmgr_set_job_status_running(ji_ptr) == SQC_RESULT_OK) {
     // Sleep for the virtual job's execution time.
@@ -65,7 +66,11 @@ s_dummy_invoke(const dbmgr_job_info_t ji_ptr) {
       if (dbmgr_ji_set_result(ji_ptr, DUMMY_RESULT, dummy_result_len) == SQC_RESULT_OK) {
         sqc_msg_info("Successfully saved the results.\n");
 
-        if (dbmgr_set_job_status_done(ji_ptr) != SQC_RESULT_OK) {
+        rc = dbmgr_set_job_status_done(ji_ptr);
+        if (rc == SQC_RESULT_INVALID_STATE_TRANSITION) {
+          // The job was cancelled while running.
+          sqc_msg_warning("Job was cancelled before transition to done.\n");
+        } else if (rc != SQC_RESULT_OK) {
           sqc_msg_error("Failed to transition status to done.\n");
         }
       } else {

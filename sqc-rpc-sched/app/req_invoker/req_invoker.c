@@ -174,8 +174,9 @@ req_invoker_invoke(const dbmgr_job_info_t ji_ptr) {
 
   if (status == SQC_RPC_SCHED_JOB_STATUS_CANCELLED) {
     rc = SQC_RESULT_OK;
-    // Do nothing.
     sqc_msg_info("Job was canceled and did not run: job_id=%s\n", job_id);
+    // Return the estimated time added at submission.
+    s_req_invoker_update_group_exec_time_total_msec(ji_ptr);
     goto error;
   } else if (status == SQC_RPC_SCHED_JOB_STATUS_DELETED) {
     rc = SQC_RESULT_OK;
@@ -184,9 +185,10 @@ req_invoker_invoke(const dbmgr_job_info_t ji_ptr) {
     goto error;
   } else if (status != SQC_RPC_SCHED_JOB_STATUS_QUEUED) {
     rc = SQC_RESULT_OK;
-    // Do nothing.
     sqc_msg_error("Job did not run due to an invalid status: job_id=%s, status=%d(%s)\n",
                   job_id, status, sqc_rpc_sched_job_status_to_string(status));
+    // Return the estimated time added at submission.
+    s_req_invoker_update_group_exec_time_total_msec(ji_ptr);
     goto error;
   }
 

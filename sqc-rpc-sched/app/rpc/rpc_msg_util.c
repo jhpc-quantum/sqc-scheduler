@@ -668,18 +668,16 @@ s_pack_job_list_reply(sqc_result_t code, const char *msg,
     ret = SQC_RESULT_OK;
 
   error:
-    if (unlikely(ret != SQC_RESULT_OK)) {
-      if (likely(reply.jobs != NULL)) {
-        for (size_t i = 0u; i < n_jobs; i++) {
-          if (reply.jobs[i] != NULL) {
-            free(reply.jobs[i]->job_id.data);
-            free(reply.jobs[i]->qc_job_id.data);
-            free(reply.jobs[i]->result.data);
-            free(reply.jobs[i]);
-          }
+    if (likely(reply.jobs != NULL)) {
+      for (size_t i = 0u; i < n_jobs; i++) {
+        if (reply.jobs[i] != NULL) {
+          free(reply.jobs[i]->job_id.data);
+          free(reply.jobs[i]->qc_job_id.data);
+          free(reply.jobs[i]->result.data);
+          free(reply.jobs[i]);
         }
-        free(reply.jobs);
       }
+      free(reply.jobs);
     }
   } else {
     ret = SQC_RESULT_INVALID_ARGS;

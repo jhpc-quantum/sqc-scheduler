@@ -227,7 +227,7 @@ code: 0
 message:
 ```
 
-Add a User:
+Add a User by Administrator:
 ```
 $ ${SQC_HOME}/bin/sqc_rpc_client adm-add-user --auth=<AUTH_METHOD> bob
 ```
@@ -237,7 +237,7 @@ code: 0
 message:
 ```
 
-Set Status of a User:
+Set Status of a User by Administrator:
 ```
 $ ${SQC_HOME}/bin/sqc_rpc_client adm-set-user-status --auth=<AUTH_METHOD> bob disable
 ```
@@ -252,7 +252,7 @@ To reactivate the user:
 $ ${SQC_HOME}/bin/sqc_rpc_client adm-set-user-status --auth=<AUTH_METHOD> bob enable
 ```
 
-Set Executable Time Limit of a Group:
+Set Executable Time Limit of a Group by Administrator:
 ```
 $ ${SQC_HOME}/bin/sqc_rpc_client adm-set-group-exec-time-limit --auth=<AUTH_METHOD> research 100
 ```
@@ -264,7 +264,7 @@ message:
 
 where `research` is the group ID and `100` is the executable time limit in hours.
 
-Set Status of a User-Group Association:
+Set Status of a User-Group Association by Administrator:
 ```
 $ ${SQC_HOME}/bin/sqc_rpc_client adm-set-user-group-status --auth=<AUTH_METHOD> bob research disable
 ```
@@ -363,7 +363,7 @@ code: 0
 message:
 ```
 
-Add a User:
+Add a User by Administrator:
 ```
 $ ${SQC_HOME}/grpc-job-broker/bin/grpc_client adm-add-user bob
 ```
@@ -373,7 +373,7 @@ code: 0
 message:
 ```
 
-Set Status of a User:
+Set Status of a User by Administrator:
 ```
 $ ${SQC_HOME}/grpc-job-broker/bin/grpc_client adm-set-user-status bob disable
 ```
@@ -388,7 +388,7 @@ To reactivate the user:
 $ ${SQC_HOME}/grpc-job-broker/bin/grpc_client adm-set-user-status bob enable
 ```
 
-Set Executable Time Limit of a Group:
+Set Executable Time Limit of a Group by Administrator:
 ```
 $ ${SQC_HOME}/grpc-job-broker/bin/grpc_client adm-set-group-exec-time-limit research 100
 ```
@@ -400,7 +400,7 @@ message:
 
 where `research` is the group ID and `100` is the executable time limit in hours.
 
-Set Status of a User-Group Association:
+Set Status of a User-Group Association by Administrator:
 ```
 $ ${SQC_HOME}/grpc-job-broker/bin/grpc_client adm-set-user-group-status bob research disable
 ```

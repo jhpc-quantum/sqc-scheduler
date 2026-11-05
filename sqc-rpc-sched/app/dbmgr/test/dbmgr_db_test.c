@@ -2271,3 +2271,219 @@ void test_dbmgr_db_weight_info_update_weight(void) {
   }
 }
 
+void test_negative_dbmgr_db_user_info_update_not_found(void) {
+  sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
+  const char *user_id = "no-such-user";
+  const int64_t update_time = 1736832113;
+  int actual_count = 0;
+
+  // initialize
+  {
+    rc = s_dbmgr_db_initialize(SQC_RPC_SCHED_UT_DB_FILE);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+    TEST_ASSERT_NOT_NULL(sqc_rpc_sched_db);
+  }
+
+  // update non-existent record
+  {
+    rc = dbmgr_db_user_info_update_role_type(user_id, SQC_RPC_SCHED_USER_ROLE_TYPE_ADMIN, update_time);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+
+    rc = dbmgr_db_user_info_update_status(user_id, SQC_RPC_SCHED_USER_STATUS_DISABLED, update_time);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+
+    rc = s_dbmgr_db_user_info_select_count(&actual_count);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+    TEST_ASSERT_EQUAL(0, actual_count);
+  }
+
+  // finalize
+  {
+    s_dbmgr_db_finalize();
+    TEST_ASSERT_NULL(sqc_rpc_sched_db);
+  }
+}
+
+void test_negative_dbmgr_db_group_info_update_not_found(void) {
+  sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
+  const char *group_id = "no-such-group";
+  const int64_t update_time = 1736832113;
+  int actual_count = 0;
+
+  // initialize
+  {
+    rc = s_dbmgr_db_initialize(SQC_RPC_SCHED_UT_DB_FILE);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+    TEST_ASSERT_NOT_NULL(sqc_rpc_sched_db);
+  }
+
+  // update non-existent record
+  {
+    rc = dbmgr_db_group_info_update_exec_time_limit_msec(group_id, 1000, update_time);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+
+    rc = dbmgr_db_group_info_update_exec_time_total_msec(group_id, 1000, update_time);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+
+    rc = s_dbmgr_db_group_info_select_count(&actual_count);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+    TEST_ASSERT_EQUAL(0, actual_count);
+  }
+
+  // finalize
+  {
+    s_dbmgr_db_finalize();
+    TEST_ASSERT_NULL(sqc_rpc_sched_db);
+  }
+}
+
+void test_negative_dbmgr_db_user_group_info_update_not_found(void) {
+  sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
+  const char *user_id = "no-such-user";
+  const char *group_id = "no-such-group";
+  const int64_t update_time = 1736832113;
+  int actual_count = 0;
+
+  // initialize
+  {
+    rc = s_dbmgr_db_initialize(SQC_RPC_SCHED_UT_DB_FILE);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+    TEST_ASSERT_NOT_NULL(sqc_rpc_sched_db);
+  }
+
+  // update non-existent record
+  {
+    rc = dbmgr_db_user_group_info_update_status(user_id, group_id,
+                                                SQC_RPC_SCHED_USER_GROUP_STATUS_DISABLED, update_time);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+
+    rc = s_dbmgr_db_user_group_info_select_count(&actual_count);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+    TEST_ASSERT_EQUAL(0, actual_count);
+  }
+
+  // finalize
+  {
+    s_dbmgr_db_finalize();
+    TEST_ASSERT_NULL(sqc_rpc_sched_db);
+  }
+}
+
+void test_negative_dbmgr_db_user_group_info_deserialize_all_key_collision(void) {
+  sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
+  // Both rows produce the same user_group_key "a:b:c"
+  const char *user_id1 = "a:b";
+  const char *group_id1 = "c";
+  const char *user_id2 = "a";
+  const char *group_id2 = "b:c";
+  const char *user_group_key = "a:b:c";
+  const sqc_rpc_sched_user_group_status_t status = SQC_RPC_SCHED_USER_GROUP_STATUS_ENABLED;
+  const int64_t created_time = 1736474012;
+  const int64_t update_time = created_time;
+  sqc_hashmap_t actual_user_group_info_hashmap = NULL;
+  dbmgr_user_group_info_t actual_ugi_ptr = NULL;
+
+  // initialize
+  {
+    rc = s_dbmgr_db_initialize(SQC_RPC_SCHED_UT_DB_FILE);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+    TEST_ASSERT_NOT_NULL(sqc_rpc_sched_db);
+
+    rc = sqc_hashmap_create(&actual_user_group_info_hashmap, SQC_HASHMAP_TYPE_STRING, NULL);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+  }
+
+  // deserialize colliding records
+  {
+    rc = s_dbmgr_db_user_group_info_insert_record(user_id1, group_id1, status,
+                                                  created_time, update_time);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+    rc = s_dbmgr_db_user_group_info_insert_record(user_id2, group_id2, status,
+                                                  created_time, update_time);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+
+    rc = s_dbmgr_db_user_group_info_deserialize_all(&actual_user_group_info_hashmap);
+    TEST_ASSERT_EQUAL(SQC_RESULT_ANY_RUNTIME_ERROR, rc);
+
+    // The first record must remain registered and valid
+    TEST_ASSERT_EQUAL(1, sqc_hashmap_size(&actual_user_group_info_hashmap));
+    rc = sqc_hashmap_find(&actual_user_group_info_hashmap, (void *) user_group_key,
+                          (void **) &actual_ugi_ptr);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+    TEST_ASSERT_NOT_NULL(actual_ugi_ptr);
+    TEST_ASSERT_EQUAL_STRING(user_group_key, actual_ugi_ptr->user_group_key);
+  }
+
+  // finalize
+  {
+    s_dbmgr_db_finalize();
+    TEST_ASSERT_NULL(sqc_rpc_sched_db);
+
+    sqc_hashmap_destroy(&actual_user_group_info_hashmap, true);
+    actual_user_group_info_hashmap = NULL;
+
+    s_dbmgr_user_group_info_destroy(actual_ugi_ptr);
+    actual_ugi_ptr = NULL;
+  }
+}
+
+void test_negative_dbmgr_db_job_info_update_not_found(void) {
+  sqc_result_t rc = SQC_RESULT_ANY_FAILURES;
+  const char *job_id = "no-such-job";
+  const int64_t update_time = 1736832113;
+  int actual_count = 0;
+
+  // initialize
+  {
+    rc = s_dbmgr_db_initialize(SQC_RPC_SCHED_UT_DB_FILE);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+    TEST_ASSERT_NOT_NULL(sqc_rpc_sched_db);
+  }
+
+  // update non-existent record
+  {
+    rc = dbmgr_db_job_info_update_queued_status(job_id, update_time, update_time);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+
+    rc = dbmgr_db_job_info_update_running_status(job_id, update_time, update_time);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+
+    rc = dbmgr_db_job_info_update_done_status(job_id, update_time, update_time);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+
+    rc = dbmgr_db_job_info_update_cancelled_status(job_id, update_time, update_time);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+
+    rc = dbmgr_db_job_info_update_error_status(job_id, update_time, update_time);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+
+    rc = dbmgr_db_job_info_update_deleted_status(job_id, update_time, update_time);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+
+    rc = dbmgr_db_job_info_update_qc_job_id(job_id, "no-such-qc-job", update_time);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+
+    rc = dbmgr_db_job_info_update_result(job_id, "{}", update_time);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+
+    rc = dbmgr_db_job_info_update_exec_time_estimate_msec(job_id, 1000, update_time);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+
+    rc = dbmgr_db_job_info_update_exec_time_msec(job_id, 1000, update_time);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+
+    rc = dbmgr_db_job_info_clear_result(job_id, update_time, update_time);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+
+    rc = s_dbmgr_db_job_info_select_count(&actual_count);
+    TEST_ASSERT_EQUAL(SQC_RESULT_OK, rc);
+    TEST_ASSERT_EQUAL(0, actual_count);
+  }
+
+  // finalize
+  {
+    s_dbmgr_db_finalize();
+    TEST_ASSERT_NULL(sqc_rpc_sched_db);
+  }
+}
+

@@ -1,6 +1,7 @@
 #include "sqc_apis.h"
 #include "rpc_jwt_client.h"
 #include "rpc_file_util.h"
+#include "rpc_token_refresh.hpp"
 
 #define JWT_TOKEN_FILE "jwt.token"
 
@@ -214,4 +215,13 @@ rpc_jwt_client_get_token(rpc_jwt_client_ctx_t* ctx, char** token) {
 void
 rpc_jwt_client_dump_ctx(rpc_jwt_client_ctx_t* ctx) {
   s_dump_ctx(ctx);
+}
+
+sqc_result_t
+rpc_jwt_client_refresh_from_conf_dir(const char *dir) {
+  try {
+    return sqc_token_refresh::ensure(dir);
+  } catch (const std::exception &) {
+    return SQC_RESULT_ANY_FAILURES;
+  }
 }
